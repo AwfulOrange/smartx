@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="quescontentlist" title="" path="branch"  jellyinject="app.drz.org.tview.quescontentlist"><data id="users"  import="drzuser" iterator="object" createnew="true" init="false" ><parameter name="where"  value="@{_jelly.prop_data_users_parmwhere_value()}" /></data><widget id="quescontenttite" title="问卷列表" container="content" bind="" ><textview /></widget></page>

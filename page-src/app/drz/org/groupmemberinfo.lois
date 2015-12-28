@@ -1,0 +1,50 @@
+package app.drz.org
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Map
+
+PAGE groupmemberinfo(title="群组成员",path="branch")extends JellyInjectBase{
+	DATA List<MstUser> gminfo(imp="drzuser",iterator="list", createnew="true"){
+		PARAMETER where(value="sid=@{request.get('groupmembersid')}");
+	};
+	
+	LAYOUT(generator="auto");
+//	LAYOUT(file="");
+	EVENT CREATE{
+	
+	}
+	
+	EVENT SUBMIT{
+		
+	}
+	EVENT PAGER{
+		gminfo = queryDataInstance("gminfo") as List<MstUser>;
+		var List groupmemberinfo = new ArrayList();
+		for(MstUser:gminfo){
+			var Map mylist=new HashMap();
+			mylist.put("groupmembername",MstUser.name);
+			mylist.put("groupmemberheader",MstUser.header);
+			mylist.put("groupmembergender",MstUser.gender);
+			groupmemberinfo.add(mylist);
+			
+			}
+			attach("groupmemberinfo", groupmemberinfo);
+
+	}
+	
+	WIDGET groupmemberinfo(title="成员信息",container="mygroupmemberinfo",bind=@{get("groupmemberinfo")}){
+		ListView(dataurl="/page/grid"){
+			COLUMN picture(title="",editable="false",type="image",bind="groupmemberheader");
+			COLUMN groupname(title="",editable="false",type="string",bind="groupmembername");
+			COLUMN groupgender(title="",editable="false",type="string",bind="groupmembergender");
+		};
+	}
+	WIDGET back(title="",container="backbutton",bind="返回"){
+		Button;
+	}
+	
+	ACTION a(target="back",type="click",todo="back");
+}

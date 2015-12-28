@@ -1,0 +1,141 @@
+package app.drz.org.tview
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import com.drz.model.MstGroup
+import java.util.List
+import com.drz.model.ClsExamination
+import java.util.ArrayList
+import java.util.Map
+import java.util.HashMap
+import com.drz.model.ClsExamination
+import java.util.ArrayList.ArrayListSpliterator
+import com.drz.model.MstGroupgrade
+
+PAGE commentanswerlist(title="评价回答列表", path="branch") extends JellyInjectBase{
+	
+	DATA MstGroup thisgroup(imp="drzgroup", iterator="object", createnew="true"){
+		PARAMETER where(value=@{"sid= "+request.get("gid")});
+	};
+    
+	DATA ClsExamination thisexamination(imp="drzexamination",iterator="object"){
+		PARAMETER where(value=@{"sid= "+request.get("commentsid")});
+	};
+	
+	LAYOUT(generator="auto");
+	
+	EVENT CREATE{
+		var Boolean iscomed=false;//判断是否已经统计过成绩
+		thisgroup = queryDataInstance("thisgroup") as MstGroup;
+		thisexamination = queryDataInstance("thisexamination") as ClsExamination;
+		if(thisexamination.commentgrade!=null){
+			iscomed=true;
+		}
+		attach("iscomed",iscomed);
+		attach("cid",request.get("cid"));
+		attach("gid",request.get("gid"));
+		attach("commentsid",request.get("commentsid"));
+	}
+	
+	EVENT SUBMIT{
+		var String istrue=null;
+		var int number=0;
+		var double sum=0;
+		if(request.get('x_source') == 'btnstatistics'){
+			for(exam:thisexamination.clsExamanswerArray){
+				sum+=exam.score;
+				number++;
+			}
+			thisexamination.commentgrade = sum/number;
+			context.submit;
+			istrue="commentanswerlist"
+			request.put("gid",get("gid"));
+			request.put("commentsid",get("commentsid"));
+		}else if(request.get('x_source') == 'btnback'){
+			request.put("gid",get("gid"));
+			request.put("cid",get("cid"));
+			istrue="back";
+		}
+		attach("istrue",istrue);	
+	}
+	
+	EVENT PAGER{
+		var List mycommentlist = new ArrayList();
+		var List nomycommentlist = new ArrayList();
+		var List<MstUser> allusers = new ArrayList<MstUser>();
+		
+		if(thisgroup !=null){		
+			for(memlist:thisgroup.mstGroupmemberArray){		
+				if(memlist.role.equals("mem")){
+				allusers.add(memlist.toMstUser);			
+				}
+			}
+			
+			for(answer:thisexamination.clsExamanswerArray){				
+				var Map mylist=new HashMap();
+				mylist.put("name",answer.toMstUser.name);
+				mylist.put("answersid",answer.sid);
+				mylist.put("grade",answer.score);
+				mycommentlist.add(mylist);
+				allusers.remove(answer.toMstUser);				
+			}
+			
+			for(user:allusers){				
+				var Map mylist2=new HashMap();
+				mylist2.put("name",user.name);
+				nomycommentlist.add(mylist2);
+			}
+		}
+		
+		attach("mycommentlist",mycommentlist);
+		attach("nomycommentlist",nomycommentlist);
+			
+	}
+	
+	EVENT LINKAWAY{
+		attach("istrue","commentlist");
+	}
+	
+	WIDGET grade(title="平均分为:",container="content",bind=@{thisexamination?.commentgrade}){
+		Textview;
+		REFRESH(condition=@{get("iscomed")},when="create");
+	}
+	
+	WIDGET nocommenttitle(title="未评价列表",container="content1",bind=""){
+		Textview;
+	}
+	
+	WIDGET nocommentlist(title="",container="content1",bind=@{get("nomycommentlist")}){
+		ListView(dataurl="/page/grid"){			
+			COLUMN name(title="",editable="false",type="string",bind="name");
+		};
+	}
+	
+	WIDGET commentanswertitle(title="已评价列表",container="content1",bind=""){
+		Textview;
+	}
+	
+	WIDGET commentlist(title="",container="content1",bind=@{get("mycommentlist")}){
+		ListView(dataurl="/page/grid"){
+			COLUMN name(title="姓名:",editable="false",type="string",bind="name");
+			COLUMN grade(title="评分:",editable="false",type="string",bind="grade");
+			COLUMN answersid(title="",editable="false",type="link",bind="answersid");
+		};
+	}
+	
+	WIDGET btnstatistics(title="",container="content2",bind="统计成绩"){
+		Button;
+		REFRESH(condition=@{get("iscomed") as Boolean==false},when="create");
+	}
+	
+	WIDGET btnback(title="",container="content3",bind="返回"){
+		Button;
+	}
+	
+	ACTION act(target="btnstatistics",type="click",todo="submit");
+	ACTION actback(target="btnback",type="click",todo="submit");
+	TRANSFER toback(on=@{get("istrue").equals("back")},to="commentlisttv");
+	TRANSFER toanswer(on=@{get("istrue").equals("commentlist")},to="commentanswerdetail");
+	TRANSFER toself(on=@{get("istrue").equals("commentanswerlist")},to="commentanswerlist");
+	
+}

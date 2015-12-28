@@ -1,0 +1,67 @@
+package app.drz.org
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+
+PAGE chatwindow(title="聊天窗", path="branch") extends JellyInjectBase{
+	DATA MstUser users(imp="drzuser",iterator="object", createnew="true",init="false"){
+		PARAMETER where(value=@{"userno= "+session.getValue('userid')});
+	};
+	
+	LAYOUT(generator="auto");
+	
+	EVENT CREATE{
+		attach("cid",request.get("cid"));
+		attach("gid",request.get("gid"));
+	}
+	
+	EVENT SUBMIT{
+		var String istrue=null;
+		users = queryDataInstance("users") as MstUser;
+		if(request.get('x_source') == 'createcomment'){
+			istrue="createcomment";
+		}else if(request.get('x_source') == 'lookovercomment'){
+			utils.log(users.flag);
+			if(users.flag.equals("tea")){
+				istrue="lookovercommenttv";
+				request.put("gid",get("gid"));
+				request.put("cid",get("cid"));
+			}else if(users.flag.equals("stu")){
+				istrue="lookovercommentsv";
+			}
+		}else if(request.get('x_source') == 'toback'){
+			istrue="back";
+			request.put("sid",get("cid"));
+		}else if(request.get('x_source') == 'uncommentlist'){
+			istrue="uncommentlist"
+			request.put("gid",get("gid"));
+			request.put("cid",get("cid"));
+		}
+		attach("istrue",istrue);
+	}
+	
+	WIDGET createcomment(title="",container="content",bind="发布评论"){
+		Button;
+	}
+	
+	WIDGET lookovercomment(title="",container="content",bind="查看评论"){
+		Button;
+	}
+	
+	WIDGET uncommentlist(title="",container="content",bind="待评价列表"){
+		Button;
+	}
+	
+	WIDGET toback(title="",container="content",bind="返回"){
+		Button;
+	}
+	
+	ACTION theuncommentlist(target="uncommentlist",type="click",todo="submit");
+	ACTION thecreatecomment(target="createcomment",type="click",todo="submit");
+	ACTION thelookovercomment(target="lookovercomment",type="click",todo="submit");
+	ACTION theback(target="toback",type="click",todo="submit");
+	TRANSFER tocreatecomment(on=@{get('istrue').equals("createcomment")},to="");
+	TRANSFER tolookovercomment(on=@{get('istrue').equals("lookovercommenttv")},to="commentlisttv");
+	TRANSFER touncommentlist(on=@{get('istrue').equals("uncommentlist")},to="uncommentlistsv");
+	TRANSFER toback(on=@{get("istrue").equals("back")},to="classgrouptv");
+}

@@ -1,0 +1,75 @@
+package app.drz.org.sview
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstGroup
+
+PAGE classgroupmodify(title="小组信息修改",path="branch")extends JellyInjectBase{
+	DATA MstGroup group(imp="drzgroup",iterator="object", createnew="true"){
+		PARAMETER where(value=@{"sid="+request.get('sid')});
+	};
+//    LAYOUT(file="");
+    LAYOUT(generator="auto");
+    
+
+    EVENT CREATE{
+      utils.log("assddad")
+	  attach("lid",request.get("thelabelsid"));
+	  attach("cid",request.get("classsid"));
+	  attach("thegid",request.get('sid'));
+	  group = queryDataInstance("group") as MstGroup;
+	  var String oldname = group.name;
+	  var String olddiscription =group.description;
+	  attach("oldname",oldname);
+	  attach("olddiscription",olddiscription);
+	  utils.log(get("oldname"));
+	  utils.log(get("olddiscription"))
+	}
+	
+	EVENT PAGER{	
+		
+	}
+	
+	EVENT SUBMIT{
+		if(request.get('x_source')=="submitbutton"){
+				if(request.get("subgroupname").toString.equals("")||request.get("subgroupdiscription").toString.equals("")){
+					utils.log("ififififififififififififififififififififififif");
+					context.error("小组名称和小组描述不能为空");
+					attach("pageturn","no-trans");
+				}else{
+					utils.log("elseelseelseelseelseelseelseelseelseelseelseelseelseels");
+				    group.name =  request.get("subgroupname").toString;
+				    group.description = request.get("subgroupdiscription").toString;
+				    context.submit();
+					request.put("thelabelsid",get("lid"));
+			        request.put("classsid",get("cid"));
+			        attach("pageturn","modify-finish");
+				}
+			
+		}
+		else if(request.get('x_source')=="back"){
+			request.put("thelabelsid",get("lid"));
+			request.put("classsid",get("cid"));
+			attach("pageturn","back-to-classgrouplabel");
+		}
+		else{
+			attach("pageturn","no-trans");
+		}
+			
+	}
+	WIDGET subgroupname(title="小组名称",container="container1",bind=@{get("oldname")},required="false"){
+		Text;
+	}
+	WIDGET subgroupdiscription(title="小组简述",container="container1",bind=@{get("olddiscription")},required="false"){
+		Textarea;
+	}
+	WIDGET submitbutton(title="",container="container2",bind="提交"){
+		Button;
+	}
+	WIDGET back(title="",container="container2",bind="返回"){
+		Button;
+	}
+	ACTION toback(target="back",type="click",todo="submit");
+    ACTION submitmessage(type="click", target="submitbutton", todo="submit");
+    TRANSFER toclassgrouplabel(on=@{get("pageturn").equals("modify-finish")},to="classgrouplabel");
+	TRANSFER backtoclassgrouplabel(on=@{get("pageturn").equals("back-to-classgrouplabel")},to="classgrouplabel");
+	
+}

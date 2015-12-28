@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="TestWidgetNumInput" title="测试NumInput控件" path="leaf"  jellyinject="app.test.widgets.TestWidgetNumInput"><layout generator="autogroup"  ></layout><widget id="Default" title="Default" container="content" bind="@{_jelly.prop_wgt_Default_bind()}" ><numinput max="100" min="5" /></widget><widget id="withMaxMin" title="Max10Min5" container="content" bind="" ><numinput max="10" min="5" /></widget><event when="create"><![CDATA[_jelly.event_create()]]></event></page>

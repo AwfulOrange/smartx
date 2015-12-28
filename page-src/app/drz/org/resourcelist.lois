@@ -1,0 +1,64 @@
+package app.drz.org
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import java.util.ArrayList
+import java.util.Map
+import java.util.HashMap
+import java.util.List
+import com.drz.model.ClsResource
+
+PAGE resourcelist(title="我的资源", path="branch") extends JellyInjectBase{
+
+	DATA MstUser users(imp="drzuser",iterator="object", createnew="true",init="false"){
+		PARAMETER where(value=@{"userno= "+session.getValue('userid')});
+	};
+
+	LAYOUT(file="", generator="autogroup");
+//	LAYOUT(file="");
+
+	EVENT CREATE{
+	}
+	
+	EVENT SUBMIT{
+	}
+	
+	EVENT PAGER{
+		utils.log("1");
+		users = queryDataInstance("users") as MstUser;
+	    var ArrayList resourceList = new ArrayList();
+	    var List<ClsResource> thisresource=new ArrayList<ClsResource>;
+	    thisresource=users.clsResourceArray;
+	    for(resource:thisresource){
+	    	var Map mylist=new HashMap();
+	    	mylist.put("name",resource.name);
+	    	mylist.put("category",resource.category);
+	    	mylist.put("mime",resource.mime);
+	    	mylist.put("token",resource.token);
+	    	mylist.put("url",resource.url);
+	    	mylist.put("creattime",resource.creattime);
+	    	mylist.put("downloadnum",resource.downloadnum);
+	    	resourceList.add(mylist);
+	    }
+	    attach("resourceList", resourceList);
+	}
+	
+	WIDGET myclasslist(title="我的课程",container="mylists",bind="_jelly.get('resourceList')"){
+		ListView(dataurl="/page/grid"){
+			COLUMN name(title="",editable="false",type="string",bind="name");
+			COLUMN category(title="",editable="false",type="string",bind="category");
+			COLUMN mime(title="",editable="false",type="string",bind="mime");
+			COLUMN token(title="",editable="false",type="string",bind="token");
+			COLUMN url(title="",editable="false",type="string",bind="url");
+			COLUMN creattime(title="",editable="false",type="string",bind="creattime");
+			COLUMN downloadnum(title="",editable="false",type="string",bind="downloadnum");
+		};
+	}
+	
+	WIDGET back(title="",container="backbutton",bind="Back"){
+		Button;
+	}
+	
+	
+	ACTION backbut(target="back",type="click",todo="back");
+}

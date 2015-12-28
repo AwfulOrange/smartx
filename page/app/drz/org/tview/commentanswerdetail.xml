@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="commentanswerdetail" title="评价明细" path="branch"  jellyinject="app.drz.org.tview.commentanswerdetail"><layout generator="auto"  ></layout><widget id="tt" title="待完成" container="content" bind="" ><textview /></widget></page>

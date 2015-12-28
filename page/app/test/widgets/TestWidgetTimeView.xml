@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="TestWidgetTimeView" title="测试TimeView控件" path="leaf"  jellyinject="app.test.widgets.TestWidgetTimeView"><layout generator="autogroup"  ></layout><widget id="Default" title="Default" container="content" bind="" ><timeview /></widget><widget id="withValue" title="withValue" container="content" bind="@{_jelly.prop_wgt_withValue_bind()}" ><timeview /></widget><event when="create"><![CDATA[_jelly.event_create()]]></event></page>

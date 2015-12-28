@@ -1,0 +1,196 @@
+package app.drz.org.tview
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import com.drz.model.MstGroup
+import com.drz.model.MstGroupmember
+import com.drz.model.ClsClass
+import com.drz.model.ClsClassstudents
+import com.drz.model.MstLabel
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Map
+import java.util.HashSet
+import java.lang.reflect.Array
+
+PAGE classlabelgroupmemberaddtv(title="小组创建",path="branch")extends JellyInjectBase{
+
+	DATA MstLabel label(imp="drzlabel",iterator="object", createnew="true"){
+		PARAMETER where(value=@{"sid= " + request.get('lid') + "and deleteflag == NULL"});
+	};
+	DATA List<MstUser> users(imp="drzuser",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"name in " + get("userslist")});
+	};
+	DATA ClsClass theclickclass(imp="drzclass",iterator="object", createnew="true",init="false"){
+		PARAMETER where(value=@{"sid= " + get('classid')});
+	};
+	
+//	LAYOUT(file="");
+LAYOUT(generator="auto");
+
+	EVENT CREATE{
+	   attach("groupname",request.get("subgroupname"));
+	   attach("groupdiscription",request.get("subgroupdiscription"));
+	   label = queryDataInstance("label") as MstLabel;
+	   attach("classid",label.fieldA);
+	   theclickclass=queryDataInstance("theclickclass") as ClsClass;
+	   attach("lid",request.get('lid'));  
+	   var List<MstUser> classuidlist=new ArrayList<MstUser>;//获取学生列表
+	   var List<String> classunamelist=new ArrayList<String>;//获取姓名列表
+		for(classstu:theclickclass.clsClassstudentsArray){
+			classuidlist.add(classstu.toMstUser);
+		}
+		
+		var List<MstGroup> thisgroup=new ArrayList<MstGroup>; 
+		thisgroup=label.mstGroupArray;
+		for(group:thisgroup){
+			var List<MstGroupmember> listmem=new ArrayList<MstGroupmember>
+			listmem=group.mstGroupmemberArray;
+			for(mems:listmem){
+				classuidlist.remove(mems.toMstUser);
+			}
+		}
+		
+		for(student:classuidlist){
+			if(student.flag.equals("stu")){
+			classunamelist.add(student.name);
+			}
+		}
+		var List<String> ownerlist=new ArrayList<String>;
+		attach("stulist",classunamelist);
+	    attach("ownerlist",ownerlist);
+	    attach("defaultowner","");
+	    utils.log("1111111111111111111111111111课程学生列表"+classuidlist);
+		utils.log("1111111111111111111111111111"+classunamelist);
+	   
+	}
+	EVENT PAGER{	
+	}
+	
+	EVENT SUBMIT{
+		utils.log("1111111111111111111111+ " +get("stulist")+" 11111111111");
+		var boolean istrue=false; //弹窗判断
+		var boolean ischoose=false;  //选择组长弹窗判断
+		var boolean ismessage=false;//未分组学生人数为空判断
+		var boolean iserror=false; //错误信息提示
+		var String pageturn="no-trans";
+		var List<String> thisstulist=get("stulist") as List<String>;
+		if(request.get('x_source')=="subbutton"){ //选择成员
+		   var mems=request.get('memchooses');
+		   var ArrayList tt = new ArrayList();	
+		   tt=mems as ArrayList;
+		   if(tt.size==0){
+		   	context.error("小组成员不能为空");
+		   }else if(tt.size>Integer.valueOf(label.fieldE)){
+		   	iserror=true;
+		   }else{
+		    attach("ownerlist",mems);
+	        attach("defaultowner",tt.get(0));
+			ischoose=true;	
+			}	
+		}else if(request.get('x_source')=="submitall"){  //提交
+			    var MstGroup Info = context.createDbIntance("drzgroup","Info") as MstGroup;
+				Info.name =  get("groupname").toString;
+				Info.description = get("groupdiscription").toString;
+				Info.header="image/SG.jpg";
+				Info.toMstLabel = label;
+				Info.toClsClass = theclickclass;
+				context.submit();  ////////////提交群组	
+				utils.log("1111111111111111111111122222222222q");
+				var List thismenbers = request.get('memchooses') as List;
+				var String userslist="(";
+		        if(thismenbers.length!=0){
+		        	for(member:thismenbers){
+			            userslist=userslist+"'"+member+"'"+",";
+			            }
+			            userslist=userslist.substring(0,userslist.length()-1);	
+			            }
+			            userslist=userslist+")";
+			            attach("userslist", userslist);
+				    users = queryDataInstance("users") as List<MstUser>;
+					for(thisuser:users){
+							var MstGroupmember Info2 = context.createDbIntance("drzgroupmember","Info2") as MstGroupmember;//插入群组成员
+					if(thisuser.name.equals(request.get("ownerchoose"))){
+					   utils.log("ownerchoose "+request.get("ownerchoose"));
+			           Info2.role = "own";
+					}else{
+					   Info2.role = "mem";
+					}
+					Info2.toMstUser =thisuser;
+					Info2.toMstGroup = Info;
+					utils.log("11111111111111111111111222222222222w");
+					context.submit(); /////提交组员
+					utils.log("11111111111111111111111222222222222e");
+				}		    
+							
+			request.put("labelsid",get("lid"));
+			utils.log("11111111111111111111111222222222222r");
+			pageturn="create-finish";
+		}
+	    else if(request.get('x_source')=="back"){
+			request.put("labelsid",get("lid"));
+			pageturn="back-to-classgrouplabel";
+		}
+		attach("istrue",istrue);
+		attach("ischoose",ischoose);
+		attach("pageturn",pageturn);
+		attach("ismessage",ismessage);	
+		attach("iserror",iserror);
+	}  
+
+	WIDGET memtextview(title="",container="container1",bind="请选择小组成员"){
+		Textview;
+	} 
+	
+    WIDGET memchooses(title="",container="container1",bind="" ){
+		CheckboxGroup(values=@{get('stulist')},titles=@{get('stulist')});
+	}
+	
+	WIDGET subbutton(title="",container="container1",bind="确定"){
+		Button;
+	}
+	
+	WIDGET memnum(title="",container="container2",bind=@{"小组人数最多为"+label?.fieldE+"人"}){
+	    Textview;
+	    REFRESH(condition=@{get("iserror")},when="submit");
+	}
+		
+	WIDGET owntextview(title="",container="container2",bind="请选择组长"){
+	    Textview;
+	    REFRESH(condition=@{get("ischoose")},when="submit");
+	}
+	
+	WIDGET ownerchoose(title="",container="container2",bind=@{get('defaultowner')}){
+		RadioGroup(values=@{get('ownerlist')},titles=@{get('ownerlist')});
+		REFRESH(condition=@{get("ischoose")},when="submit");
+	}
+	
+	WIDGET submitall(title="",container="container3",bind="提交"){
+		Button;
+		REFRESH(condition=@{get("ischoose")},when="submit");
+	}
+	
+	WIDGET back(title="",container="container3",bind="返回"){
+		Button;
+	}
+	
+	ACTION thesubmitall(target="submitall",type="click",todo="submit");		
+    ACTION submitmessage(type="click", target="subbutton", todo="submit");
+    ACTION theback(type="click",target="back",todo="submit");
+    
+    TRANSFER toclassgrouplabel(on=@{get("pageturn").equals("create-finish")},to="classlabelgrouptv");
+	TRANSFER backtoclassgrouplabel(on=@{get("pageturn").equals("back-to-classgrouplabel")},to="classlabelgrouptv");
+
+
+
+
+
+
+
+
+
+
+
+
+
+}

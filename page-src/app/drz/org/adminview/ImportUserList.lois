@@ -1,0 +1,125 @@
+package app.drz.org.adminview
+
+import cn.drz.ImportStudentListJob
+import cn.smartx.core.model.JellyInjectBase
+import cn.smartx.core.service.job.JobServiceManager
+import java.util.Map
+import java.util.HashMap
+import cn.smartx.core.service.job.ISmartxJob
+import java.util.Date
+import java.util.ArrayList
+
+PAGE ImportUserList(title="导入数据",path="leaf") extends JellyInjectBase{
+	LAYOUT(generator="auto");
+	
+	EVENT CREATE{
+		var ArrayList title = new ArrayList();
+		title.add("学生列表");
+		title.add("课程列表");
+		title.add("上课名单");
+		title.add("课程信息")
+		attach("title",title);
+		attach("default","学生列表");
+		attach("istrue",false);
+		
+	}
+	
+	EVENT SUBMIT{
+		if(request.get('x_source') == 'btnisok'){
+			attach("istrue",true);
+			
+		}else if(request.get('x_source') == 'btnSubmit'){
+			var String token = request.get('ImportFile') as String;
+			var Map jobParms = new HashMap<String, Object>();
+			jobParms.put("pctx",context);
+			jobParms.put("session",session);
+			jobParms.put("utils",utils);
+			jobParms.put("importFileToken",token);
+			jobParms.put("name", request.get("ImportName") as String);
+			jobParms.put("type",request.get("typeradio") as String);
+			var String jobKey = JobServiceManager.getInstance().startJob(ImportStudentListJob, context.appCode, jobParms);
+			attach("jobKey", jobKey);
+		}
+	}
+	
+	EVENT REFRESH{
+		if(request.get('x_source') == 'timer'){
+			var String jobKey = get("jobKey") as String;
+			var ISmartxJob job = JobServiceManager.getInstance().queryJob(jobKey);
+			if(job != null){
+				var int percentage = (job.percentage * 100).intValue;
+				var Map<String, Object> statusMap = job.queryJobStatus();
+				var String statusDesc = "" + percentage + "%(共:" + statusMap.get("total")
+					+ ";成功:" + statusMap.get("success")
+					+ ";剔重:" + statusMap.get("failed")
+					+ ";已保存:" + statusMap.get("storage")
+					+ ")";
+
+				attach("progresscurrent", percentage);
+				attach("progresslabel", statusDesc);
+			}
+		}
+	}
+	
+	WIDGET ImportName(title="导入批次名称", container="content",bind=@{utils.toDateString(new Date())}){
+		Text(max="100");
+		REFRESH(when="create");
+	}
+
+	WIDGET ImportFile(title="导入文件", container="content",bind=""){
+		Upload(filetype="xls|xlsx",showdownload="true",maxsize="50");
+		REFRESH(when="create");
+	}
+	
+	WIDGET btnisok(title="",container="content",bind="导入数据库"){
+		Button;
+	}
+	
+	WIDGET typetitle(title="请选择导入文件类型",container="content",bind=""){
+		Textview;
+		REFRESH(condition="false",when="create");
+		REFRESH(condition=@{get("istrue")},when="submit");
+	}
+	
+	WIDGET typeradio(container="content",bind=@{get("default")}){
+		RadioGroup(titles=@{get("title")},values=@{get("title")});
+		REFRESH(condition="false",when="create");
+		REFRESH(condition=@{get("istrue")},when="submit");
+	}
+	
+	WIDGET btnSubmit(title="", container="content",bind="开始插入数据"){
+		Button;
+		REFRESH(condition="false",when="create");
+		REFRESH(condition=@{get("istrue")},when="submit");
+	}
+	
+	WIDGET process(title="", container="content",bind=""){
+		Progress(current=@{get("progresscurrent")}, label=@{get("progresslabel")});
+		REFRESH(when="submit");
+		REFRESH(when="refresh");
+	}
+
+	WIDGET timer(title="", container="content",bind=""){
+		Timer(interval="1000",repeat="0",start="auto",delay="1000");
+		REFRESH(when="submit");
+		REFRESH(when="refresh", condition=@{get("progresscurrent") as Integer == 100}, remove="true");
+	}
+
+	WIDGET btnReload(container="content",bind="继续导入"){
+		Button;
+		REFRESH(when="refresh", condition=@{get("progresscurrent") as Integer == 100});
+	}
+
+//	WIDGET btnQuery(container="content",bind="查询号码"){
+//		Button;
+//		REFRESH(when="refresh", condition=@{get("progresscurrent") as Integer == 100});
+//	}
+
+    ACTION actSubmit(target="btnisok",type="click",todo="submit");
+	ACTION actSubmit(target="btnSubmit",type="click",todo="submit");
+	ACTION actSubmit(target="btnReload",type="click",todo="submit");
+	ACTION actSubmit(target="btnQuery",type="click",todo="submit");
+	
+	TRANSFER reloadSelf(on=@{request.get("x_source") == "btnReload"},when="submit",to="ImportUserList");
+//	TRANSFER toQueryUserList(on=@{request.get("x_source") == "btnQuery"},when="submit",to="queryUserList");
+}

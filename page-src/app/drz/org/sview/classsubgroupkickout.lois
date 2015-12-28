@@ -1,0 +1,95 @@
+package app.drz.org.sview
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import com.drz.model.MstGroupmember
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Map
+
+PAGE classsubgroupkickout(title="小组成员操作",path="branch")extends JellyInjectBase{
+	DATA MstUser gminfo(imp="drzuser",iterator="object", createnew="true"){
+		PARAMETER where(value=@{"sid="+get('groupmemberuid')});
+	};
+	DATA MstGroupmember gm(imp="drzgroupmember",iterator="object", createnew="true"){
+		PARAMETER where(value=@{"sid="+request.get('groupmembersid')});
+	};
+	DATA MstUser user(imp="drzuser",iterator="object", createnew="true"){
+		PARAMETER where(value=@{"userno="+session.getValue('userid')});
+	};
+	DATA MstGroupmember userrole(imp="drzgroupmember",iterator="object" , createnew="true"){
+		PARAMETER where(value=@{"toMstGroup="+request.get('sid') +"and toMstUser="+get("userid")});
+	};
+	LAYOUT(generator="auto");
+	
+//	LAYOUT(file="");
+	EVENT CREATE{
+		utils.log("assddad")
+		attach("lid",request.get("lid"));
+		attach("thegid",request.get("sid"));
+		attach("cid",request.get("cid"));
+		gm = queryDataInstance("gm") as MstGroupmember;
+		user = queryDataInstance("user") as MstUser;
+		attach("groupmemberuid",gm.toMstUser.sid);
+		attach("userid",user.sid);
+		attach("groupmembersid",request.get("groupmembersid"));
+		userrole = queryDataInstance("userrole") as MstGroupmember;
+	    if(userrole.role.equals("own")){
+	    	request.put("kick-button","true");
+	    }else{
+	    	request.put("kick-button","false");
+	    }
+	    gminfo = queryDataInstance("gminfo") as MstUser;
+	}
+	
+	EVENT SUBMIT{
+		if(request.get('x_source')=="kickout"){//---------------------------踢出
+//		    if(get("role").equals("群主")){
+			    var MstGroupmember readytokickmember = context.queryDbDataPK(Integer.parseInt(get("groupmembersid").toString),"drzgroupmember") as MstGroupmember;
+		        readytokickmember.toMstGroup =null;
+		        readytokickmember.toMstUser = null;
+		        context.submit();
+		        var MstGroupmember kickmember = context.queryDbDataPK(Integer.parseInt(get("groupmembersid").toString),"drzgroupmember") as MstGroupmember;
+		        context.deleteDbData(kickmember);
+		        context.submit();
+		        request.put("sid",get("thegid"));
+		        request.put("lid",get("lid"));
+		        request.put("cid",get("cid"));
+		        attach("pageturn","to-classsubgroupjoin");
+		        
+//		    }else{
+//			    context.error("无权限操作");
+//			    attach("pageturn","no-trans");
+//		    }
+		   }
+	}
+	EVENT PAGER{
+		var List groupmemberinfo = new ArrayList();
+		var Map mylist=new HashMap();
+		mylist.put("groupmembername",gminfo.name);
+		mylist.put("groupmemberheader",gminfo.header);
+		mylist.put("groupmembergender",gminfo.gender);
+		groupmemberinfo.add(mylist);
+		attach("groupmemberinfo", groupmemberinfo);
+
+	}
+	WIDGET groupmemberinfo(title="成员信息",container="container1",bind=@{get("groupmemberinfo")},class="classlist li"){
+		ListView(dataurl="/page/grid"){
+			COLUMN picture(title="",editable="false",type="image",bind="groupmemberheader");
+			COLUMN groupname(title="",editable="false",type="string",bind="groupmembername");
+			COLUMN groupgender(title="",editable="false",type="string",bind="groupmembergender");
+		};
+	}
+	WIDGET kickout(title="",container="container2",bind="踢出"){
+		Button;
+		REFRESH(condition="request.get('kick-button')=='true'",when="create");
+	}
+	WIDGET back(title="",container="container2",bind="返回"){
+		Button;
+	}
+	ACTION kick(target="kickout",type="click",todo="submit");
+	ACTION back(target="back",type="click",todo="back");
+	TRANSFER togroupmemberinfo(on=@{get("pageturn").equals("to-classsubgroupjoin")},to="classsubgroupjoin");
+	
+	
+}

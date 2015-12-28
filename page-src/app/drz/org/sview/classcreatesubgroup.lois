@@ -1,0 +1,92 @@
+package app.drz.org.sview
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import com.drz.model.MstGroup
+import com.drz.model.MstGroupmember
+import com.drz.model.ClsClass
+
+import com.drz.model.MstLabel
+
+PAGE classcreatesubgroup(title="分组",path="branch")extends JellyInjectBase{
+
+	DATA MstLabel label(imp="drzlabel",iterator="object", createnew="true"){
+		PARAMETER where(value="sid=@{request.get('lid')}");
+	};
+	
+	DATA MstUser user(imp="drzuser",iterator="object", createnew="true",init="false"){
+		PARAMETER where(value="userno=@{session.getValue('userid')}");
+	};
+	DATA ClsClass theclickclass(imp="drzclass",iterator="object", createnew="true",init="false"){
+		PARAMETER where(value="sid=@{request.get('cid')}");
+	};
+	
+//	LAYOUT(file="");
+    LAYOUT(generator="auto");
+    
+	EVENT CREATE{
+utils.log("assddad")
+	   label = queryDataInstance("label") as MstLabel;
+	   user = queryDataInstance("user") as MstUser;
+	   theclickclass=queryDataInstance("theclickclass") as ClsClass;
+	   attach("lid",request.get('lid'));
+	   attach("cid",request.get('cid'));
+	  
+	}
+	EVENT PAGER{
+
+	}
+	EVENT SUBMIT{
+		if(request.get('x_source')=="submitbutton"){
+				if(request.get("subgroupname").toString.equals("")||request.get("subgroupdiscription").toString.equals("")){
+					utils.log("ififififififififififififififififififififififif");
+					context.error("小组名称和小组描述不能为空");
+					attach("pageturn","no-trans");
+				}else{
+					var MstGroup Info = context.createDbIntance("drzgroup","Info") as MstGroup;
+				    Info.name =  request.get("subgroupname").toString;
+				    Info.description = request.get("subgroupdiscription").toString;
+				    Info.header="image/SG.jpg";
+				    Info.toMstLabel = label;
+				    Info.toClsClass = theclickclass;
+				    var MstGroupmember Info2 = context.createDbIntance("drzgroupmember","Info2") as MstGroupmember;
+				    Info2.toMstGroup = Info;
+				    Info2.toMstUser = user;
+				    Info2.role = "own";
+				    context.submit();
+					request.put("thelabelsid",get("lid"));
+			        request.put("classsid",get("cid"));
+			        attach("pageturn","create-finish");
+				}
+			
+		}
+		else if(request.get('x_source')=="back"){
+			request.put("thelabelsid",get("lid"));
+			request.put("classsid",get("cid"));
+			attach("pageturn","back-to-classgrouplabel");
+		}
+		else{
+			attach("pageturn","no-trans");
+		}
+				
+	}
+ 
+	WIDGET subgroupname(title="小组名称",container="container1",bind="",required="false"){
+		Text(placeholder='请输入小组名称');
+		
+	}
+	WIDGET subgroupdiscription(title="小组简述",container="container1",bind="",required="false"){
+		Textarea(placeholder='描述');
+	}
+	WIDGET submitbutton(title="",container="container2",bind="提交"){
+		Button;
+	}
+	WIDGET back(title="",container="container2",bind="返回"){
+		Button;
+	}
+	ACTION toback(target="back",type="click",todo="submit");
+    ACTION submitmessage(type="click", target="submitbutton", todo="submit");
+    TRANSFER toclassgrouplabel(on=@{get("pageturn").equals("create-finish")},to="classgrouplabel");
+	TRANSFER backtoclassgrouplabel(on=@{get("pageturn").equals("back-to-classgrouplabel")},to="classgrouplabel");
+
+}

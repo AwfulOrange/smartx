@@ -1,0 +1,141 @@
+package app.drz.org.tview
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstLabel
+import java.util.ArrayList
+import java.util.Map
+import java.util.HashMap
+import java.util.List
+import com.drz.model.MstGroup
+import com.drz.model.ClsClass
+import com.drz.model.MstUser
+import com.drz.model.MstGroupmember
+
+PAGE classgrouptv(title="", path="branch") extends JellyInjectBase{
+	 DATA MstUser thisuser(imp="drzuser", iterator="object", createnew="true"){
+		PARAMETER where(value=@{"userno= "+session.getValue('userid')});
+	};
+	
+    DATA List<MstLabel> thislabel(imp="drzlabel", iterator="list", createnew="true"){
+	    PARAMETER where(value=@{"fieldA= "+get('cid') + "and deleteflag == NULL"});
+		
+	};
+	
+	LAYOUT(generator="auto");
+//    LAYOUT(file="");
+    
+	EVENT CREATE{
+		if(request.get("theclasssid")!=null){
+			attach("cid",request.get("theclasssid"));
+		}else{
+			attach("cid",request.get("sid"));
+		}	
+	}
+	
+	EVENT SUBMIT{
+		var String istrue=null;
+		if(request.get('x_source') == 'labeladdbutton'){
+		    istrue="labeladdbutton";
+			request.put("classsid",get('cid'));//获取课程号
+		}else if(request.get('x_source') == 'infobutton'){
+			istrue="infobutton";
+			request.put("sid",get('cid'));//获取课程号
+		}else if(request.get('x_source') == 'back'){
+			istrue="back";
+		}
+		attach("istrue",istrue);
+	}   
+	
+	EVENT PAGER{
+		thisuser = queryDataInstance("thisuser") as MstUser;
+		var List myclassgroup = new ArrayList();
+		var List<MstGroup> thisgroup =new ArrayList<MstGroup>;
+		var List<MstGroupmember> thismember =new ArrayList<MstGroupmember>;
+		thismember=thisuser.mstGroupmemberArray; 
+		for(member:thismember){
+			thisgroup.add(member.toMstGroup);
+		}
+		for(mygroup: thisgroup){
+			if(mygroup.toClsClass.sid==get("cid")){
+			var Map mylist=new HashMap();
+			mylist.put("groupname",mygroup?.name);
+			mylist.put("groupheader",mygroup?.header);
+			mylist.put("sid",mygroup?.sid);
+			myclassgroup.add(mylist);
+			}
+		}
+			attach("myclassgroup", myclassgroup);
+
+		thislabel = queryDataInstance("thislabel") as List<MstLabel> ;//显示关于这门课的标签
+		var List myclasslabel = new ArrayList();
+		for(mylabel: thislabel){
+			var Map mylist=new HashMap();
+			mylist.put("name",mylabel?.fieldB);
+			mylist.put("sid",mylabel?.sid);
+			mylist.put("labelmax","人数上限："+mylabel.fieldE);
+			myclasslabel.add(mylist);
+			}
+			attach("myclasslabel", myclasslabel);	
+	}
+	
+	EVENT LINKAWAY{
+		if(request.get('x_source') == 'labels'){
+			attach("istrue","labsid");
+			}else if(request.get('x_source') == 'classgroup'){
+				request.put("cid",get("cid"));
+				attach("istrue","classgroup");
+			}
+	}
+	
+	WIDGET classgrouptitle(title="群组列表",container="container1",bind=""){
+		Textview;
+	}
+	
+    WIDGET classgroup(title="",container="container1",bind=@{get("myclassgroup")},class="classlist li"){
+		ListView(dataurl="/page/grid"){
+			COLUMN groupheader(title="",editable="false",type="image",bind="groupheader");
+			COLUMN groupname(title="",editable="false",type="string",bind="groupname");
+			COLUMN gid(title="",editable="false",type="link",bind="sid");
+		};
+	}
+	
+	WIDGET labelstitle(title="标签列表",container="container2",bind=""){
+		Textview;
+	}
+
+    WIDGET labels(title="",container="container2",bind=@{get("myclasslabel")},class="labellist li"){
+      	ListView(dataurl="/page/grid"){
+      		COLUMN name(title="",editable="false",type="string",bind="name");
+      		COLUMN labelmax(title="",editable="false",type="string",bind="labelmax");
+      		COLUMN labelsid(title="",editable="false",type="link",bind="sid");
+      		
+      	};
+      }
+      
+      
+      WIDGET labeladdbutton(title="",container="container3",bind="添加标签"){
+      	Button;
+      }
+      
+      WIDGET infobutton(title="",container="container3",bind="课程详细信息"){
+      	Button;
+      }
+      
+      WIDGET back(title="",container="container3",bind="返回"){
+		Button;
+	  }
+	
+	
+	  ACTION backbut(target="back",type="click",todo="submit");
+      
+      ACTION tolabeladd(type="click", target="labeladdbutton", todo="submit");
+      ACTION toinfo(type="click", target="infobutton", todo="submit");
+      
+      TRANSFER toback(on=@{get('istrue').equals("back")},to="classlist");
+      TRANSFER toactchange(on=@{get('istrue').equals("labsid")},to="classlabelgrouptv");
+	  TRANSFER tolabeladd(on=@{get('istrue').equals("labeladdbutton")},to="classlabeladd");
+	  TRANSFER toinfo(on=@{get('istrue').equals("infobutton")},to="classinformation");
+	  TRANSFER tochatwindow(on=@{get('istrue').equals("classgroup")},to="chatwindow");
+	
+	
+}

@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="TestWidgetSelect" title="测试Select控件" path="leaf"  jellyinject="app.test.widgets.TestWidgetSelect"><layout generator="autogroup"  ></layout><widget id="Default" title="Default" container="content" bind="" ><select ><option><![CDATA[_jelly.option_Default()]]></option></select></widget><widget id="withValue" title="withValue" container="content" bind="key2" ><select ><option><![CDATA[_jelly.option_withValue()]]></option></select></widget><event when="create"><![CDATA[_jelly.event_create()]]></event></page>

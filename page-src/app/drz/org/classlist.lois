@@ -1,0 +1,94 @@
+package app.drz.org
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import java.util.ArrayList
+import java.util.Map
+import java.util.HashMap
+import java.util.List
+import com.drz.model.ClsClassstudents
+import com.drz.model.ClsClass
+import javax.el.Util
+
+PAGE classlist(title="我的课程", path="branch") extends JellyInjectBase{
+
+	DATA MstUser users(imp="drzuser",iterator="object", createnew="true",init="false"){
+		PARAMETER where(value=@{"userno= "+session.getValue('userid')});
+	};
+
+	LAYOUT(generator="auto");
+//    LAYOUT(file="");
+
+	EVENT CREATE{
+	}
+	
+	EVENT SUBMIT{
+		var String istrue=null;
+		if(request.get('x_source') == 'friendsbtn'){
+			istrue="friendlists";
+			request.put("uid",users.sid);
+		}
+		attach("istrue",istrue);
+	}   
+	
+	EVENT PAGER{
+		users = queryDataInstance("users") as MstUser;
+	    var ArrayList newsArrayList = new ArrayList();
+	    if(users.flag.equals("tea")){
+	    	for(thisClass:users.clsClassArray){
+	    		var Map mylist=new HashMap();
+	    		mylist.put("picture",thisClass.header);
+	    	    mylist.put("classname",thisClass.name);
+	    	    mylist.put("sid",thisClass.sid);
+	    	    mylist.put("teacher",thisClass.toMstUser.name);  
+	    	    newsArrayList.add(mylist);	
+	    	}
+	    }else if(users.flag.equals("stu")){
+	    var List<ClsClassstudents> thisclassstudent=new ArrayList<ClsClassstudents>;
+	    thisclassstudent=users.clsClassstudentsArray;
+	    for(classstudents:thisclassstudent){
+	    	var ClsClass thisClass =classstudents.toClsClass;
+	    	var Map mylist=new HashMap();
+	    	mylist.put("picture",thisClass.header);
+	    	mylist.put("classname",thisClass.name);
+	    	mylist.put("sid",thisClass.sid);
+	    	mylist.put("teacher",thisClass.toMstUser.name);  
+	    	newsArrayList.add(mylist);
+	    }
+	    }
+	    	attach("newsArrayList", newsArrayList);
+	       
+	}
+	
+	EVENT LINKAWAY{
+		if(users.flag.equals("tea")){
+			attach("istrue","classgrouptv");
+		}else if(users.flag.equals("stu")){
+			attach("istrue","classgrouplistsv");
+		}
+			
+	}
+	
+	WIDGET myclasslisttitle(title="课程列表",container="container1",bind=""){
+		Textview;
+	}
+	
+    WIDGET myclasslist(title="",container="container1",bind=@{get("newsArrayList")},class="classlist li"){
+		ListView(dataurl="/page/grid"){
+			COLUMN picture(title="",editable="false",type="image",bind="picture");
+			COLUMN classname(title="",editable="false",type="string",bind="classname");
+			COLUMN teacher(title="",editable="false",type="string",bind="teacher");
+			COLUMN theclasssid(title="",editable="false",type="link",bind="sid");
+		};
+	}
+	
+	WIDGET friendsbtn(title="",container="friendsbutton",bind="好友列表"){
+		Button(mapenterbutton="true");
+	}
+	
+	ACTION tofriends(type="click", target="friendsbtn", todo="submit");
+	TRANSFER tofriends(on=@{get('istrue').equals("friendlists")},to="friendlist");
+	TRANSFER actchanget(on=@{get('istrue').equals("classgrouptv")},to="classgrouptv");
+	TRANSFER actchanges(on=@{get('istrue').equals("classgrouplistsv")},to="classgrouplistsv");
+
+}

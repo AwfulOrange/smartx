@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataset appcode="drz">
+	<item code="config" type="config" iterator="map">
+		<config>
+			<property name="appCode" mapping="drz"></property>
+			<property name="drzroot" mapping="http://127.0.0.1:8080/drz"></property>
+		</config>
+	</item>
+	<item code="drzbbsartucal" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsBbsartical" />
+	</item>
+	<item code="drzbbstopic" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsBbstopic" />
+	</item>
+	<item code="drzclass" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsClass" />
+	</item>
+	<item code="drzclassstudents" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsClassstudents" />
+	</item>
+	<item code="drzclasstime" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsClasstime" />
+	</item>
+	<item code="drzexamanswer" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsExamanswer" />
+	</item>
+	<item code="drzexamanswerdetail" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsExamanswerdetail" />
+	</item>
+	<item code="drzexamination" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsExamination" />
+	</item>
+	<item code="drzquescontent" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsQuescontent" />
+	</item>
+	<item code="drzquesoption" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsQuesoption" />
+	</item>
+	<item code="drzquestionnaire" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsQuestionnaire" />
+	</item>
+	<item code="drzresource" type="entity" iterator="object">
+		<entity type="com.drz.model.ClsResource" />
+	</item>
+	<item code="drzfriends" type="entity" iterator="object">
+		<entity type="com.drz.model.MstFriends" />
+	</item>
+	<item code="drzgroup" type="entity" iterator="object">
+		<entity type="com.drz.model.MstGroup" />
+	</item>
+	<item code="drzgroupmember" type="entity" iterator="object">
+		<entity type="com.drz.model.MstGroupmember" />
+	</item>
+	<item code="drzuser" type="entity" iterator="object">
+		<entity type="com.drz.model.MstUser" />
+	</item>	
+		<item code="drzlabel" type="entity" iterator="object">
+		<entity type="com.drz.model.MstLabel" />
+	</item>	
+</dataset>

@@ -1,0 +1,64 @@
+package app.drz.org.sview
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import com.drz.model.MstGroup
+import java.util.List
+import com.drz.model.ClsExamination
+import java.util.ArrayList
+import java.util.Map
+import java.util.HashMap
+import com.drz.model.ClsQuestionnaire
+import com.drz.model.ClsQuescontent
+
+PAGE evaluatepager(title="", path="branch") extends JellyInjectBase{
+	
+	DATA ClsExamination thisexamination(imp="drzexamination",iterator="object"){
+		PARAMETER where(value=@{"sid= "+request.get("commentsid")});
+	};
+	
+	LAYOUT(generator="auto");
+	
+	EVENT CREATE{
+		
+	}
+	
+	EVENT PAGER{
+		thisexamination = queryDataInstance("thisexamination") as ClsExamination;	
+		
+		//添加问卷题目信息
+	    var ClsQuestionnaire questionnaire=thisexamination.toClsQuestionnaire;
+	    var questionnairetitle = questionnaire.name;
+	    var questionnairedescription =questionnaire.author+" "+questionnaire.major+" "+questionnaire.course+" "+questionnaire.mark;
+	    attach("questionnairetitle",questionnairetitle);
+	    attach("questionnairedescription",questionnairedescription);
+	    
+	    //添加题目和选项
+	    var List<ClsQuescontent> quescontents=questionnaire.clsQuescontentArray;
+	    var List contentslist = new ArrayList();
+	    for(quescontent:quescontents){
+	    	var Map mylist=new HashMap();
+	    	mylist.put("content",quescontent.no+" "+quescontent.content+" "+quescontent.score);
+	    	contentslist.add(mylist);
+	    }
+	    attach("contentslist",contentslist);
+	      
+	}
+	
+	WIDGET questionnairetitle(title=@{get("questionnairetitle")},container="content",bind=@{get("questionnairedescription")}){
+		Textview;
+	}
+	
+	WIDGET contentlist(title="",container="content1",bind=@{get("contentslist")}){
+		ListView(dataurl="/page/grid"){
+			COLUMN content(title="",editable="false",type="image",bind="content");
+		};
+	}
+	
+	WIDGET btnsubmit(title="",container="content2",bind="提交"){
+		Button;
+	}
+	
+	
+	
+}

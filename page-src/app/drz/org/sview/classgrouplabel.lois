@@ -1,0 +1,125 @@
+package app.drz.org.sview
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import com.drz.model.MstGroup
+import com.drz.model.MstGroupmember
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Map
+PAGE classgrouplabel(title="分组",path="branch")extends JellyInjectBase{
+	DATA List<MstGroup> thisgrouplist(imp="drzgroup",iterator="list", createnew="true"){
+		PARAMETER where(value="toMstLabel=@{request.get('thelabelsid')}");
+	};
+	DATA MstUser user(imp="drzuser",iterator="object", createnew="true",init="false"){
+		PARAMETER where(value="userno=@{session.getValue('userid')}");
+	};
+	
+	DATA List<MstGroupmember> allstudentsinthislabel(imp="drzgroupmember",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"toMstGroup in "+get('thislabelgrouplist')});
+	};
+	DATA List<MstGroup> grouplist(imp="drzgroup",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"toMstLabel = "+request.get("thelabelsid")});
+	};
+//	LAYOUT(file="");
+LAYOUT(generator="auto");
+
+	EVENT CREATE{
+utils.log("assddad")
+	   var thelabelsid=request.get("thelabelsid");
+	   var theclasssid=request.get("classsid");
+       user = queryDataInstance("user") as MstUser;
+	   attach("theclasssid",theclasssid);
+	   attach("thelabelsid",thelabelsid);
+	    grouplist = queryDataInstance("grouplist") as List<MstGroup>;
+	    var String thislabelgrouplist="(" ;
+		var int grouplistsize = grouplist.size;
+		for(var int i=0;i<grouplistsize;i++){
+			if(i<grouplistsize-1){thislabelgrouplist=thislabelgrouplist+"'"+grouplist.get(i).sid+"',";}
+			else{thislabelgrouplist=thislabelgrouplist+"'"+grouplist.get(i).sid+"'";}
+			}
+			thislabelgrouplist=thislabelgrouplist+")";
+		utils.log("|||||||--------THIS LABEL GROUP LIST--------|||||||");
+		utils.log(thislabelgrouplist);
+		var String s = "not-exist";
+		if(!thislabelgrouplist.equals("()")){
+			attach("thislabelgrouplist",thislabelgrouplist);
+			allstudentsinthislabel = queryDataInstance("allstudentsinthislabel") as List<MstGroupmember>;
+		    for(var int j=0;j<allstudentsinthislabel.size;j++){
+			  if(user.sid==allstudentsinthislabel.get(j).toMstUser.sid){
+				s = "exist";
+			  }
+		    }
+		}
+		attach("s",s);
+       
+	}
+	EVENT PAGER{
+		var List<MstGroupmember> groupmember =new ArrayList<MstGroupmember>;
+		thisgrouplist = queryDataInstance("thisgrouplist") as List<MstGroup> ;
+	
+		var List list = new ArrayList();	
+		for(group:thisgrouplist){
+			var Map mylist=new HashMap();
+			var String createname=null;
+			mylist.put("name",group.name);
+			mylist.put("picture",group.header);
+			groupmember=group.mstGroupmemberArray;
+			for(member:groupmember){
+				if(member.role!=null&&member.role==1){
+					createname=member.toMstUser.name;
+			   }
+			}
+			mylist.put("createname",createname);
+			mylist.put("sid",group.sid);
+			list.add(mylist);
+			}
+			attach("list", list);
+	}
+	EVENT SUBMIT{
+		if(request.get('x_source')=="create")
+		{
+		request.put("lid",get('thelabelsid'));
+		request.put("cid",get('theclasssid'));
+		if(get("s").equals("not-exist")){
+			attach("pageturn","to-create");
+		}else{
+			context.error("已经加入过小组");
+			attach("pageturn","no-trans");
+		}
+		}
+		else if(request.get('x_source')=="back"){
+			request.put("theclasssid",get('theclasssid'));
+			attach("pageturn","back-to-sv");
+		}
+	}
+	EVENT LINKAWAY{
+		request.put("lid",get('thelabelsid'));
+		request.put("cid",get('theclasssid'));
+		attach("pageturn","to-labelgroup");
+	}
+	WIDGET labelgrouptitle(title="已建立小组",container="container1",bind=""){
+		Textview;
+	}
+	WIDGET labelgroup(title="",container="container1",bind=@{get("list")},class="classlist li"){
+		ListView(dataurl="/page/grid"){
+			COLUMN picture(title="",editable="false",type="image",bind="picture");
+			COLUMN name(title="",editable="false",type="string",bind="name");
+			COLUMN sid(title="",editable="false",type="link",bind="sid");
+			COLUMN createname(title="",editable="false",type="string",bind="createname");
+		};
+	}
+	WIDGET create(title="",container="container2",bind="建立分组"){
+		Button;
+	}
+	WIDGET back(title="",container="container2",bind="返回"){
+		Button;
+	}
+	
+	ACTION toback(target="back",type="click",todo="submit");
+	ACTION tocreate(type="click", target="create", todo="submit");
+	TRANSFER toclasscreatesubgroup(on=@{get("pageturn").equals("to-create")},to="classcreatesubgroup");
+	TRANSFER toclassgrouplistsv(on=@{get("pageturn").equals("back-to-sv")},to="classgrouplistsv");
+	TRANSFER tojoingroup(on=@{get('pageturn').equals("to-labelgroup")},to="classsubgroupjoin");
+}

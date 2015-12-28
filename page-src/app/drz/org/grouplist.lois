@@ -1,0 +1,59 @@
+package app.drz.org
+import cn.smartx.core.model.JellyInjectBase
+
+import com.drz.model.MstGroupmember
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Map
+import com.drz.model.MstUser
+
+PAGE grouplist(title="课程群组",path="branch")extends JellyInjectBase{
+	DATA MstUser users(imp="drzuser",iterator="object", createnew="true",init="false"){
+		PARAMETER where(value="userno=@{session.getValue('userid')}");
+	};
+	DATA List<MstGroupmember> glist(imp="drzgroupmember",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"toMstUser=" + get("id")});
+	
+	};
+	LAYOUT(generator="auto");
+//	LAYOUT(file="");
+	EVENT CREATE{
+        users = queryDataInstance("users") as MstUser;
+        attach("id", users.sid);
+        
+	}
+	
+	EVENT SUBMIT{
+		
+	}
+	EVENT PAGER{
+		glist = queryDataInstance("glist") as List<MstGroupmember>;
+		var List grouplist = new ArrayList();
+		
+		for(MstGroupmember:glist){
+			var Map mylist=new HashMap();
+			mylist.put("groupname",MstGroupmember.toMstGroup.name);
+			mylist.put("groupheader",MstGroupmember.toMstGroup.header);
+			mylist.put("sid",MstGroupmember.toMstGroup.sid);
+			grouplist.add(mylist);
+			}
+			attach("grouplist", grouplist);
+
+	}
+	WIDGET titles(title="我的群组",container="mygrouptitle",bind=""){
+		Textview;
+	}
+
+
+	WIDGET grouplist(title="我的群组",container="mygrouplist",bind=@{get("grouplist")}){
+		ListView(dataurl="/page/grid"){
+			COLUMN picture(title="",editable="false",type="image",bind="groupheader");
+			COLUMN groupname(title="",editable="false",type="string",bind="groupname");
+			COLUMN sid(title="",editable="false",type="link",bind="sid");
+		};
+	}
+	
+	
+	TRANSFER actchange(on="@{request.get('x_source') == 'grouplist'}",to="groupmemberlist");
+}

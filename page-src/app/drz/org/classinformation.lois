@@ -1,0 +1,93 @@
+package app.drz.org
+
+import cn.smartx.core.model.JellyInjectBase;
+import com.drz.model.ClsClasstime
+import com.drz.model.MstUser
+import java.util.List
+import java.util.ArrayList
+import java.util.Map
+import java.util.HashMap
+
+PAGE classinformation(title="课程信息", path="branch") extends JellyInjectBase{
+
+    DATA List<ClsClasstime> thisclass(imp="drzclasstime", iterator="list"){
+		PARAMETER where(value=@{"toClsClass= "+request.get('sid')});
+	};
+	DATA MstUser users(imp="drzuser",iterator="object", createnew="true",init="false"){
+		PARAMETER where(value=@{"userno= "+session.getValue('userid')});
+	};
+//	LAYOUT(file="");
+
+    LAYOUT(generator="auto");
+	
+	EVENT CREATE{
+		var getsid=request.get('sid');
+		attach("mysid",getsid);
+		
+	}
+	EVENT SUBMIT{
+		var String istrue=null;
+		users = queryDataInstance("users") as MstUser;
+		if(request.get('x_source') == 'studentlistbutton'){
+			istrue="stubut";
+			request.put("classsid",get("mysid"));//获取课程号
+		}else if(request.get('x_source') == 'back'){
+			if(users.flag.equals("stu")){
+				istrue="backbut-stu";
+				request.put("theclasssid",get("mysid"));
+			}else if(users.flag.equals("tea")){
+				istrue="backbut-tea";
+				request.put("sid",get("mysid"));
+			}
+			
+		}
+		attach("istrue",istrue);
+	}
+	
+	EVENT PAGER{
+		utils.log("1");
+		thisclass = queryDataInstance("thisclass") as List<ClsClasstime>;
+		var ArrayList myclasstime = new ArrayList();
+	    for(classtime:thisclass){
+	    	var Map mylist=new HashMap();
+	    	mylist.put("location",classtime.location);
+//	    	mylist.put("day",classtime.day);
+//	    	mylist.put("flag",classtime.flag);   
+	    	mylist.put("time",classtime.flag+classtime.day+" "+classtime.starttime+"~"+classtime.endtime);
+	    	mylist.put("type",classtime.type);
+	    	myclasstime.add(mylist);	
+	    }
+	    	attach("myclasstime", myclasstime);
+	}
+	WIDGET timetitle(title="上课时间",container="mytimelists",bind=""){
+		Textview;
+	}
+	
+	WIDGET mytimelist(title="",container="mytimelists",readonly="true",bind=@{get("myclasstime")}){
+		ListView(dataurl="/page/grid"){
+			COLUMN type(title="课程类型",editable="false",type="string",bind="type");
+			COLUMN location(title="上课地点",editable="false",type="string",bind="location");
+//			COLUMN flag(title="单双周",editable="false",type="string",bind="flag");
+//			COLUMN day(title="周",editable="false",type="string",bind="day");
+			COLUMN time(title="上课时间",editable="false",type="string",bind="time");
+		};
+	}
+	
+	
+	WIDGET studentlistbutton(title="",container="container1",bind="学生列表"){
+		Button;
+	}
+	
+	WIDGET back(title="",container="container1",bind="返回"){
+		Button;
+	}
+	
+	
+	ACTION backbut(target="back",type="click",todo="submit");
+	ACTION tostudentlist(target="studentlistbutton",type="click",todo="submit"); 
+	TRANSFER tostudentslist(on=@{get('istrue').equals("stubut")},to="classstudentlist");
+	TRANSFER backclassgrouptv(on=@{get('istrue').equals("backbut-tea")},to="classgrouptv");
+	TRANSFER backclassgroupsv(on=@{get('istrue').equals("backbut-stu")},to="classgrouplistsv");
+	
+	
+}

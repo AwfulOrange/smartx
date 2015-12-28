@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="TestWidgetImageView" title="测试ImageView控件" path="leaf"  jellyinject="app.test.widgets.TestWidgetImageView"><layout generator="autogroup"  ></layout><widget id="Default" title="Default" container="content" bind="images/1.png" ><imageview /></widget><widget id="withScalable" title="withScalable" container="content" bind="images/1.png" ><imageview scalable="true" /></widget><event when="create"><![CDATA[_jelly.event_create()]]></event></page>

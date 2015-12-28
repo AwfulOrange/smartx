@@ -1,0 +1,138 @@
+package app.drz.org.sview
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import com.drz.model.MstGroupmember
+import com.drz.model.MstLabel
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Map
+PAGE classgrouplistsv(title="课程群主-学生",path="branch")extends JellyInjectBase{
+
+	DATA MstUser users(imp="drzuser",iterator="object", createnew="true",init="false"){
+		PARAMETER where(value=@{"userno="+session.getValue("userid")});
+	};
+	DATA List<MstLabel> classgrouplabel(imp="drzlabel",iterator="list"){
+		PARAMETER where(value=@{"fieldA="+request.get('theclasssid') + 'and deleteflag=NULL'});
+	};
+	DATA List<MstGroupmember> glist(imp="drzgroupmember",iterator="list"){
+		PARAMETER where(value=@{"toMstUser=" + get("uid")});
+	};
+//	LAYOUT(file="");
+	
+    LAYOUT(generator="auto");
+    
+	EVENT CREATE{
+        users = queryDataInstance("users") as MstUser;
+        attach("uid",users.sid);
+        classgrouplabel = queryDataInstance("classgrouplabel") as List<MstLabel>;
+        attach("classgrouplabel", classgrouplabel);
+        glist = queryDataInstance("glist") as List<MstGroupmember>;
+        utils.log(glist);
+        var classid = request.get('theclasssid');
+        utils.log(classid);
+        attach("classid",classid);
+        
+	}
+	EVENT PAGER{
+        if(classgrouplabel.length!=0){
+        var int i=0;
+        var List labellist = new ArrayList();
+		for(MstLabel:classgrouplabel){
+			var long endtime = Long.parseLong(classgrouplabel.get(i).fieldD);
+			var long starttime = Long.parseLong(classgrouplabel.get(i).fieldC);
+			if((endtime-System.currentTimeMillis()>0)&&(starttime-System.currentTimeMillis()<0)){
+			var Map thelistlabel=new HashMap();
+			thelistlabel.put("classname",MstLabel.fieldA);
+			thelistlabel.put("labelname",MstLabel.fieldB);
+			thelistlabel.put("labelmax","人数上限："+MstLabel.fieldE);
+			thelistlabel.put("labeltype",MstLabel.type);
+			thelistlabel.put("sid",MstLabel.sid);
+			labellist.add(thelistlabel);
+			i++;
+			} 
+			attach("labellist", labellist);
+			}
+		var List grouplist = new ArrayList();
+		for(gm:glist){
+			var Map thegrouplist=new HashMap();
+			thegrouplist.put("groupname",gm.toMstGroup.name);
+			thegrouplist.put("groupheader",gm.toMstGroup.header);
+			thegrouplist.put("groupsid",gm.toMstGroup.sid);
+			if((gm.toMstGroup.toClsClass.sid==Integer.parseInt(get("classid").toString))&&(gm.toMstGroup.deleteflag==null)){
+				grouplist.add(thegrouplist);
+			}
+			}
+			attach("grouplist", grouplist);
+			utils.log("||||||||||||||||||||||||||||||||||||||||||||||||");
+			utils.log(get("grouplist"))
+        }else{
+        var List grouplist = new ArrayList();
+		for(gm:glist){
+			var Map thegrouplist=new HashMap();
+			thegrouplist.put("groupname",gm.toMstGroup.name);
+			thegrouplist.put("groupheader",gm.toMstGroup.header);
+			thegrouplist.put("groupsid",gm.toMstGroup.sid);
+			if((gm.toMstGroup.toClsClass.sid==Integer.parseInt(get("classid").toString))&&(gm.toMstGroup.deleteflag==null)){
+				grouplist.add(thegrouplist);
+			}
+			}
+			attach("grouplist", grouplist);
+			utils.log(get("grouplist"))
+        }
+		
+
+	}
+	EVENT LINKAWAY{
+		request.put("classsid",get("classid"));
+		attach("pageturn","no-trans");
+	}
+	EVENT SUBMIT{
+		if(request.get('x_source') == 'back')
+		{
+			request.put("classsid",get("classid"));
+		    attach("pageturn","back-to-classlist");
+		}else if(request.get('x_source') == 'infobutton'){
+			request.put("sid",get('classid'));//获取课程号
+			attach("pageturn","infobutton");
+			
+		}
+		else{
+			attach("pageturn","no-trans");
+		}
+	}
+	WIDGET labeltitle(title="课程标签",container="container1",bind=""){
+		Textview;
+	}
+	WIDGET labellist(title="",container="container1",bind=@{get("labellist")},class="labellist li "){
+		ListView(dataurl="/page/grid"){
+			COLUMN labelname(title="",editable="false",type="string",bind="labelname");
+			COLUMN labelmax(title="",editable="false",type="string",bind="labelmax");
+			COLUMN thelabelsid(title="",editable="false",type="link",bind="sid");
+			
+		};
+	}
+	WIDGET grouptitle(title="我的群组",container="container2",bind=""){
+		Textview;
+	}
+	WIDGET grouplist(title="",container="container2",bind=@{get("grouplist")},class="classlist li"){
+		ListView(dataurl="/page/grid"){
+			COLUMN picture(title="",editable="false",type="image",bind="groupheader");
+			COLUMN groupname(title="",editable="false",type="string",bind="groupname");
+			COLUMN thegroupsid(title="",editable="false",type="link",bind="groupsid");
+		};
+	}
+	WIDGET infobutton(title="",container="container3",bind="课程详细信息"){
+      	Button;
+      }
+    WIDGET back(title="",container="container3",bind="返回"){
+		Button;
+	}
+	ACTION toback(target="back",type="click",todo="submit");
+	ACTION toinfo(type="click", target="infobutton", todo="submit");
+	TRANSFER toclasslist(on=@{get("pageturn").equals("back-to-classlist")},to="classlist");
+    TRANSFER togroupmemberlist(on=@{request.get('x_source') == "grouplist"},to="classgroupmemberlistsv");
+    TRANSFER toclassgrouplabel(on=@{request.get('x_source') == "labellist"},to="classgrouplabel");
+    TRANSFER toinfo(on=@{get('pageturn').equals("infobutton")},to="classinformation");
+}

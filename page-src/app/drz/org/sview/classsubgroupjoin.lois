@@ -1,0 +1,253 @@
+package app.drz.org.sview
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstGroupmember
+import com.drz.model.MstGroup
+import com.drz.model.MstUser
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Map
+PAGE classsubgroupjoin(title="加入群组",path="branch")extends JellyInjectBase{
+	DATA List<MstGroupmember> gmlist(imp="drzgroupmember",iterator="list" ,transient="true"){
+		PARAMETER where(value=@{"toMstGroup="+request.get('sid')});
+	};
+	DATA MstGroup group(imp="drzgroup",iterator="object", createnew="true"){
+		PARAMETER where(value=@{"sid="+request.get('sid')});
+	};
+	DATA List<MstGroup> grouplist(imp="drzgroup",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"toMstLabel = "+request.get("lid")});
+	};
+	DATA MstUser user(imp="drzuser",iterator="object", createnew="true"){
+		PARAMETER where(value=@{"userno="+session.getValue('userid')});
+	};
+	DATA List<MstGroupmember> allstudentsinthislabel(imp="drzgroupmember",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"toMstGroup in "+get('thislabelgrouplist')});//所有该标签下的学生
+	};
+	
+	LAYOUT(generator="auto");
+	
+//	LAYOUT(file="");
+	EVENT CREATE{
+		utils.log("assddad")
+		utils.log("CREATE执行");
+	    grouplist = queryDataInstance("grouplist") as List<MstGroup>;
+		user = queryDataInstance("user") as MstUser;
+		group = queryDataInstance("group") as MstGroup;
+		var List<MstGroupmember> thegmlist = context.queryDbDataList("drzgroupmember","toMstGroup="+request.get('sid'),"sid",true);
+		
+		var String thislabelgrouplist="(" ; //查找标签下的群组
+		var int grouplistsize = grouplist.size;
+		for(var int i=0;i<grouplistsize;i++){
+			if(i<grouplistsize-1){thislabelgrouplist=thislabelgrouplist+"'"+grouplist.get(i).sid+"',";}
+			else{thislabelgrouplist=thislabelgrouplist+"'"+grouplist.get(i).sid+"'";}
+			}
+			thislabelgrouplist=thislabelgrouplist+")";
+		attach("thislabelgrouplist",thislabelgrouplist);//所有这个标签下小组主键字符串
+		
+		allstudentsinthislabel = queryDataInstance("allstudentsinthislabel") as List<MstGroupmember>;//所有在这个标签下的学生
+		for(var int j=0;j<allstudentsinthislabel.size;j++){
+			if(user.sid===allstudentsinthislabel.get(j).toMstUser.sid){
+				utils.log("truetruetruetruetruetruetruetruetrue");
+				attach("exist-in-this-label",true);
+				attach("themember",allstudentsinthislabel.get(j).sid);
+			}
+		}
+		attach("thegid",request.get('sid'));
+		attach("group",group);
+		attach("user",user);
+		attach("grouplist",grouplist);
+		attach("lid",request.get("lid"));
+		attach("cid",request.get("cid"));
+		attach("uid",user.sid);
+		for(gm:thegmlist){
+			if(gm.role.equals("own")){
+				attach("thecreator",gm.toMstUser.name);
+			}
+			if(get("exist-in-this-label")!=true){
+				utils.log("join-buttonjoin-buttonjoin-buttonjoin-buttonjoin-buttonjoin-button");
+				request.put("join-button","true");
+			}else if(get("exist-in-this-label")==true){
+				if((gm.toMstUser.sid==get("uid"))&&(gm.role.equals("own"))){
+					attach("role",gm.role);
+					utils.log("群主群主群主群主群主群主群主群主群主群主群主群主群主群主");
+				   request.put("dismiss-button","true");
+				   request.put("modify-button","true");
+			    }else if((gm.toMstUser.sid==get("uid"))&&(gm.role.equals("mem"))){
+			    	utils.log("成员成员成员成员成员成员成员成员成员成员成员成员成员成员成员成员成员");
+			    	attach("role",gm.role);
+			       request.put("join-button","true");
+				   request.put("out-button","true");
+			    }
+			}
+		}
+	}
+	EVENT PAGER{
+		utils.log("PAGE执行PAGE执行PAGE执行PAGE执行PAGE执行PAGE执行PAGE执行PAGE执行PAGE执行");
+		gmlist = queryDataInstance("gmlist") as List<MstGroupmember>;
+//		var List<MstGroupmember> gmlist = context.queryDbDataList("drzgroupmember","toMstGroup="+request.get('sid'),"sid",true);
+		for(gm:gmlist){
+				if((gm.toMstUser.sid==get("uid"))&&(gm.role.equals("mem"))){
+					attach("themember",gm.sid);
+			    }
+		}
+		attach("stunum",gmlist.size);
+		var List groupmemberlist = new ArrayList();
+		for(mgm:gmlist){
+			var Map mylist=new HashMap();	
+			if(mgm.role.equals("mem")){
+			mylist.put("groupmembername",mgm.toMstUser.name);
+			mylist.put("groupmemberheader",mgm.toMstUser.header);
+			mylist.put("groupmemberid",mgm.toMstUser.sid);
+			mylist.put("gmsid",mgm.sid);
+			mylist.put("kickout","踢出");
+			groupmemberlist.add(mylist);
+			 }
+			}
+			utils.log("99999999999999999999999999999999999999");
+			utils.log(groupmemberlist);
+			attach("groupmemberlist", groupmemberlist);
+
+	}
+	EVENT SUBMIT{
+		if(request.get('x_source')=="join"){//-----------------------------加入按钮动作
+		   if(get("exist-in-this-label")!=true){
+			   if((Integer.valueOf(group.toMstLabel.fieldE)>Integer.valueOf(get("stunum").toString))){
+				   var MstGroupmember Info = context.createDbIntance("drzgroupmember","Info") as MstGroupmember;
+				   Info.toMstGroup =  group;
+				   Info.toMstUser = user;
+				   Info.role = "mem";
+				   attach("role","mem");
+				   request.put("sid",get("thegid"));
+				   context.submit();
+				   request.put("out-button","true");
+				   attach("exist-in-this-label",true);
+				   attach("pageturn","no-trans");
+			   }else{
+				   context.error("人数已满人数已满人数已满人数已满人数已满人数已满人数已满人数已满");
+				   attach("pageturn","no-trans");
+			   }
+		    }else{
+				context.error("已经加入过小组");
+				attach("pageturn","no-trans");
+			}
+		}
+		else if(request.get('x_source')=="back"){//----------------------------返回按钮动作
+			request.put("classsid",get("cid"));
+		    request.put("thelabelsid",get("lid"));
+		    attach("pageturn","back-to-classgrouplabel");  
+		}else if(request.get('x_source')=="out"){//-----------------------------退出小组功能：成员功能
+		    var MstGroupmember themember = context.queryDbDataPK(Integer.parseInt(get("themember").toString),"drzgroupmember") as MstGroupmember;
+		    context.deleteDbData(themember);
+			context.submit();
+			request.put("classsid",get("cid"));
+			request.put("thelabelsid",get("lid"));
+			request.put("sid",get("thegid"));
+			attach("pageturn","back-to-classgrouplabel");  
+		}else if(request.get('x_source')=="dismiss"){//----------------------------------解散小组
+		    var List<MstGroupmember> thememberlist=context.queryDbDataList("drzgroupmember","toMstGroup="+get('thegid'),"sid",true) as List<MstGroupmember>;
+		    for(tm:thememberlist){
+		    	tm.toMstGroup =null;
+		    	tm.toMstUser = null;
+		    	context.submit();
+		    }
+		    var MstGroup g = context.queryDbDataPK(Integer.parseInt(get('thegid').toString),"drzgroup") as MstGroup;
+		    g.toClsClass = null;
+		    g.toMstGroup = null;
+		    g.toMstLabel = null;
+		    context.submit();
+		    var MstGroup gdelete = context.queryDbDataPK(Integer.parseInt(get('thegid').toString),"drzgroup") as MstGroup;
+		    var List<MstGroupmember> thememberlistdelete=context.queryDbDataList("drzgroupmember","toMstGroup = NULL","sid",true) as List<MstGroupmember>;
+		    for(tmdelete:thememberlistdelete){
+		    	context.deleteDbData(tmdelete);
+		    }
+		    context.deleteDbData(gdelete);
+			context.submit();
+			request.put("classsid",get("cid"));
+			request.put("thelabelsid",get("lid"));
+			request.put("sid",get("thegid"));
+			attach("pageturn","back-to-classgrouplabel");
+		}else if(request.get('x_source')=="modify"){//-------------------------修改
+			request.put("classsid",get("cid"));
+			request.put("thelabelsid",get("lid"));
+			request.put("sid",get("thegid"));
+			attach("pageturn","to-classgroupmodify");
+		}
+//		else if(request.get('x_source')=="踢出"){//---------------------------踢出
+//		    if(get("role").equals("群主")){
+//			    utils.log(request.get("groupmembersid"));
+//			    var MstGroupmember readytokickmember = context.queryDbDataPK(Integer.parseInt(request.get("groupmembersid").toString),"drzgroupmember") as MstGroupmember;
+//		        readytokickmember.toMstGroup =null;
+//		        readytokickmember.toMstUser = null;
+//		        context.submit();
+//		        var MstGroupmember kickmember = context.queryDbDataPK(Integer.parseInt(request.get("groupmembersid").toString),"drzgroupmember") as MstGroupmember;
+//		        context.deleteDbData(kickmember);
+//		        context.submit();
+//		        attach("pageturn","no-trans");
+//		        request.put("sid",get("thegid"));
+//		    }else{
+//			    context.error("无权限操作");
+//			    attach("pageturn","no-trans");
+//		    }
+		   }
+		
+	EVENT LINKAWAY{
+		request.put("lid",get("lid"));
+		request.put("sid",get("thegid"));
+		request.put("cid",get("cid"));
+		attach("pageturn","to-classsubgroupkickout");
+	}
+	
+	
+	WIDGET titles(title="我的群组成员",container="container1",bind=""){
+		Textview;
+	}
+	
+	WIDGET groupmemberlist(title="我的群组",container="container1",bind=@{get("groupmemberlist")},class="groupmemberlist li"){
+		ListView(dataurl="/page/grid"){
+			COLUMN picture(title="",editable="false",type="image",bind="groupmemberheader");
+			COLUMN groupname(title="",editable="false",type="string",bind="groupmembername");
+//			COLUMN groupmemberuid(title="",editable="false",type="link",bind="groupmemberid");
+            COLUMN kick(title="",editable="false",type="btn",bind="kickout");
+			COLUMN groupmembersid(title="",editable="false",type="link",bind="gmsid");
+			
+		};
+		REFRESH(condition="true",when="create");
+		REFRESH(condition="true",when="submit");
+	}
+	WIDGET creatorname(title="",container="container1",bind=@{"组长 :"+get("thecreator")}){
+		Textview;
+	}
+	
+	
+	WIDGET join(title="",container="container2",bind="加入该组"){
+		Button;
+		REFRESH(condition="request.get('join-button')=='true'",when="create");
+		REFRESH(condition="request.get('join-button')=='true'",when="submit");
+	}
+	WIDGET modify(title="",container="container2",bind="修改小组信息"){
+		Button;
+		REFRESH(condition="request.get('modify-button')=='true'",when="create");
+//		REFRESH(condition="request.get('modify-button')=='true'",when="submit");
+	}
+	WIDGET out(title="",container="container2",bind="退出小组"){
+		Button;
+		REFRESH(condition="request.get('out-button')=='true'",when="create");
+		REFRESH(condition="request.get('out-button')=='true'",when="submit");
+	}
+	WIDGET dismiss(title="",container="container2",bind="解散小组"){
+		Button;
+		REFRESH(condition="request.get('dismiss-button')=='true'",when="create");
+//		REFRESH(condition="request.get('dismiss-button')=='true'",when="submit");
+	}
+	WIDGET back(title="",container="container2",bind="返回"){
+		Button;
+	}
+	ACTION toback(target="back",type="click",todo="submit");
+	ACTION joinaction(target="join",type="click",todo="submit");
+	ACTION outaction(target="out",type="click",todo="submit");
+    ACTION dismissaction(target="dismiss",type="click",todo="submit");
+    ACTION modifyaction(target="modify",type="click",todo="submit");
+    TRANSFER toclassgroupmodify(on=@{get("pageturn").equals("to-classgroupmodify")},to="classgroupmodify");
+	TRANSFER toclassgrouplabel(on=@{get("pageturn").equals("back-to-classgrouplabel")},to="classgrouplabel");
+	TRANSFER togroupmemberinfo(on=@{get("pageturn").equals("to-classsubgroupkickout")},to="classsubgroupkickout");
+}

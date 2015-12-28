@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="TestWidgetResource" title="测试Resource控件" path="leaf"  jellyinject="app.test.widgets.TestWidgetResource"><layout generator="autogroup"  ></layout><widget id="Note" title="Note" container="content" bind="待完成" ><textview /></widget><event when="create"><![CDATA[_jelly.event_create()]]></event></page>

@@ -1,0 +1,94 @@
+package app.drz.org.tview
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstGroupmember
+import com.drz.model.MstGroup
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Map
+
+PAGE classlabelgroupmemberlisttv(title="群组成员",path="branch")extends JellyInjectBase{
+	DATA List<MstGroupmember> gmlist(imp="drzgroupmember",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"toMstGroup= "+request.get('sid')});
+	};
+	LAYOUT(generator="auto");
+//	LAYOUT(file="");
+	EVENT CREATE{
+		attach("thislid",request.get("lid"));
+		attach("gid",request.get('sid'));
+	}
+	
+	EVENT SUBMIT{
+		var String istrue=null;
+		if(request.get('x_source')=='backbtn'){
+			istrue="back";
+			request.put("labelsid",get("thislid"));
+		}else if(request.get('x_source')=='deletebutton'){///强行解散小组
+			istrue="deletebutton";
+			request.put("labelsid",get("thislid"));
+			
+		    var List<MstGroupmember> thememberlist=context.queryDbDataList("drzgroupmember","toMstGroup="+get('gid'),"sid",true) as List<MstGroupmember>;
+		    utils.log(thememberlist);
+		    for(tms:thememberlist){
+		    	tms.toMstGroup =null;
+		    	tms.toMstUser = null;
+		    	utils.log(tms);
+		    	context.submit();
+		    }
+		    
+		    var MstGroup g = context.queryDbDataPK(Integer.parseInt(get('gid').toString),"drzgroup") as MstGroup;
+		    g.toClsClass = null;
+		    g.toMstGroup = null;
+		    g.toMstLabel = null;
+		    context.submit();
+		    var MstGroup gdelete = context.queryDbDataPK(Integer.parseInt(get('gid').toString),"drzgroup") as MstGroup;
+		    var List<MstGroupmember> thememberlistdelete=context.queryDbDataList("drzgroupmember","toMstGroup = NULL","sid",true) as List<MstGroupmember>;
+		    for(tmdelete:thememberlistdelete){
+		    	context.deleteDbData(tmdelete);
+		    }
+		    context.deleteDbData(gdelete);
+			context.submit();		
+		}
+		attach("istrue",istrue);
+	}
+	
+	EVENT PAGER{
+		gmlist = queryDataInstance("gmlist") as List<MstGroupmember>;
+		var List groupmemberlist = new ArrayList();
+		for(MstGroupmember:gmlist){
+			var Map mylist=new HashMap();
+			mylist.put("groupmembername",MstGroupmember.toMstUser.name);
+			mylist.put("groupmemberheader",MstGroupmember.toMstUser.header);
+			mylist.put("groupmemberid",MstGroupmember.toMstUser.sid);
+			groupmemberlist.add(mylist);
+			}
+			
+			attach("groupmemberlist", groupmemberlist);
+
+	}
+	WIDGET titles(title="我的群组成员",container="container1",bind=""){
+		Textview;
+	}
+	
+	WIDGET groupmemberlist(title="",container="container1",bind=@{get("groupmemberlist")},class="classlist li"){
+		ListView(dataurl="/page/grid"){
+			COLUMN picture(title="",editable="false",type="image",bind="groupmemberheader");
+			COLUMN groupname(title="",editable="false",type="string",bind="groupmembername");
+			COLUMN sid(title="",editable="false",type="link",bind="groupmemberid");
+		};
+	}
+	
+	WIDGET deletebutton(title="",container="container2",bind="删除"){
+		Button;
+	}
+	
+	WIDGET backbtn(title="",container="container2",bind="返回"){
+		Button;
+	}
+	
+	ACTION thedeletebutton(target="deletebutton",type="click",todo="submit");
+	ACTION thebackbut(target="backbtn",type="click",todo="submit");
+	TRANSFER toback(on=@{get('istrue').equals("back")},to="classlabelgrouptv");
+	TRANSFER todelete(on=@{get('istrue').equals("deletebutton")},to="classlabelgrouptv");
+	
+}

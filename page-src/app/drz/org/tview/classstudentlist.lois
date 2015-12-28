@@ -1,0 +1,64 @@
+package app.drz.org.tview
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.ClsClassstudents
+import com.drz.model.MstUser
+import java.util.ArrayList
+import java.util.Map
+import java.util.HashMap
+import java.util.List
+
+PAGE classstudentlist(title="", path="branch") extends JellyInjectBase{
+
+	DATA List<ClsClassstudents> thisstudentlist(imp="drzclassstudents",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"toClsClass= "+request.get('classsid')});
+	};
+//
+	LAYOUT(generator="auto");
+	
+//    LAYOUT(file="");
+
+	EVENT CREATE{
+		attach("thiscid",request.get('classsid'));
+	}
+	
+	EVENT SUBMIT{
+		var String istrue=null;
+		if(request.get('x_source')=='backbtn'){
+			istrue="backflag";
+			request.put("sid",get("thiscid"));
+		}
+		attach("istrue",istrue);
+	}   
+	
+	EVENT PAGER{
+		thisstudentlist = queryDataInstance("thisstudentlist") as List<ClsClassstudents>;
+	    var List studentList = new ArrayList();
+	    for(classstudents:thisstudentlist){
+	    	var MstUser thisstudent =classstudents.toMstUser;
+	    	var Map mylist=new HashMap();
+	    	mylist.put("studentname",thisstudent.name);
+	    	studentList.add(mylist);	
+	    }
+	    	attach("studentList", studentList);
+	}
+	
+	WIDGET myclasslisttitle(title="学生列表",container="container1",bind=""){
+		Textview;
+	}
+		
+    WIDGET myclasslist(title="",container="container1",bind=@{get("studentList")}){
+		ListView(dataurl="/page/grid"){
+			COLUMN studentname(title="",editable="false",type="string",bind="studentname");
+		};
+	}
+	
+	WIDGET backbtn(title="",container="container2",bind="返回"){
+		Button;
+	}
+	
+	
+	ACTION thebackbut(target="backbtn",type="click",todo="submit");
+	TRANSFER toback(on=@{get('istrue').equals("backflag")},to="classinformation");
+	
+}

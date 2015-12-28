@@ -1,0 +1,70 @@
+package app.drz.org.sview
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstGroupmember
+
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Map
+PAGE classgroupmemberlistsv(title="群组成员",path="branch")extends JellyInjectBase{
+	DATA List<MstGroupmember> gmlist(imp="drzgroupmember",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"toMstGroup="+request.get("thegroupsid")});
+	};
+	LAYOUT(generator="auto");
+//	LAYOUT(file="");
+	EVENT CREATE{
+		gmlist = queryDataInstance("gmlist") as List<MstGroupmember>;
+		attach("gid",request.get("thegroupsid"));
+		attach("cid",request.get("classsid"));
+	}
+	
+	EVENT SUBMIT{
+		var String istrue=null;
+		if(request.get('x_source') == 'searchgrade'){
+			istrue="classgroupgrade";
+			request.put("gid",get("gid"));
+			request.put("cid",get("cid"));
+		}else if(request.get('x_source') == 'btnback'){
+			istrue="back";
+			request.put("theclasssid",get("cid"));
+		}
+		attach("istrue",istrue);
+	}
+	EVENT PAGER{
+		var List groupmemberlists = new ArrayList();
+		for(MstGroupmember:gmlist){
+			var Map mylist=new HashMap();
+			mylist.put("groupmembername",MstGroupmember.toMstUser.name);
+			mylist.put("groupmemberheader",MstGroupmember.toMstUser.header);
+			mylist.put("groupmemberid",MstGroupmember.toMstUser.sid);
+			groupmemberlists.add(mylist);
+			}
+			attach("groupmemberlists", groupmemberlists);
+
+	}
+	WIDGET titles(title="我的群组成员",container="mygroupmembertitle",bind=""){
+		Textview;
+	}
+	
+	WIDGET groupmemberlist(title="我的群组",container="mygroupmemberlist",bind=@{get("groupmemberlists")},class="classlist li"){
+		ListView(dataurl="/page/grid"){
+			COLUMN picture(title="",editable="false",type="image",bind="groupmemberheader");
+			COLUMN groupname(title="",editable="false",type="string",bind="groupmembername");
+			COLUMN groupmembersid(title="",editable="false",type="link",bind="groupmemberid");
+		};
+	}
+	
+	WIDGET searchgrade(title="",container="content",bind="查询成绩"){
+		Button;
+	}
+	
+	WIDGET btnback(title="",container="content",bind="返回"){
+		Button;
+	}
+	
+	ACTION thesearchgrade(target="searchgrade",type="click",todo="submit");
+	ACTION toback(target="btnback",type="click",todo="submit"); 
+	TRANSFER actchange1(on="@{request.get('x_source') == 'groupmemberlist'}",to="groupmemberinfo");
+	TRANSFER actchange2(on=@{get("istrue").equals("classgroupgrade")},to="classgroupgrade");
+	TRANSFER actchange3(on=@{get("istrue").equals("back")},to="classgrouplistsv");
+}

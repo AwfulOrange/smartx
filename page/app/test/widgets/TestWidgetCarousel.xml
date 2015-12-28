@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="TestWidgetCarousel" title="测试Carousel控件" path="leaf"  jellyinject="app.test.widgets.TestWidgetCarousel"><layout generator="autogroup"  ></layout><widget id="paneAWidget" title="" container="paneA" bind="images/1.png" ><imageview /></widget><widget id="paneBWidget" title="" container="paneB" bind="images/2.png" ><imageview /></widget><widget id="paneCWidget" title="" container="paneC" bind="images/3.png" ><imageview /></widget><event when="create"><![CDATA[_jelly.event_create()]]></event></page>

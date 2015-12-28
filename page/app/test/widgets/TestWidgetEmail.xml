@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="TestWidgetEmail" title="测试Email控件" path="leaf"  jellyinject="app.test.widgets.TestWidgetEmail"><layout generator="autogroup"  ></layout><widget id="Default" title="Default" container="content" bind="a@a.com" ><email /></widget><widget id="withPlaceHolder" title="withPlaceHolder" container="content" bind="" ><email placeholder="请填写邮件" /></widget><event when="create"><![CDATA[_jelly.event_create()]]></event></page>

@@ -1,0 +1,135 @@
+package app.drz.org.tview
+import cn.smartx.core.model.JellyInjectBase
+
+import com.drz.model.MstGroup
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Map
+import com.drz.model.MstGroupmember
+import com.drz.model.MstLabel
+
+PAGE classlabelgrouptv(title="",path="branch")extends JellyInjectBase{
+	DATA List<MstGroup> thisgrouplist(imp="drzgroup",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"toMstLabel= "+request.get('labelsid')  + "and deleteflag == NULL"});
+	};
+	DATA MstLabel thislabel(imp="drzlabel", iterator="object", createnew="true"){
+		PARAMETER where(value=@{"sid= "+request.get('labelsid') + "and deleteflag == NULL"});
+	};
+	LAYOUT(generator="auto");
+	
+//    LAYOUT(file="");
+    
+    
+	EVENT CREATE{  
+		thislabel = queryDataInstance("thislabel") as MstLabel ;
+		thisgrouplist = queryDataInstance("thisgrouplist") as List<MstGroup> ;
+		attach("thissid",thislabel.fieldA); 
+		attach("mysid",request.get('labelsid'));
+	}
+	
+	EVENT SUBMIT{
+		var String istrue="no";
+		var Boolean ismessage=false;
+		if(request.get('x_source')=='deletelable'){	
+			if(thisgrouplist.size==0){	
+			thislabel.deleteflag = "delete";					
+			context.submit();
+			istrue="delete";
+			request.put("sid",get("thissid"));
+			}else{
+				ismessage=true;
+			}
+		}else if(request.get('x_source')=='addgroup'){
+			istrue="addgroup";
+			request.put("lid",get("mysid"));			
+		}else if (request.get('x_source')=='changemessage'){
+			istrue="changemessage";
+		    request.put("lid",get("mysid"));
+		    request.put("cid",get("thissid"));
+		}else if (request.get('x_source')=='backbtn'){
+			istrue="back";
+		    request.put("sid",get("thissid"));
+		}else if(request.get('x_source')=='sendquestionnaire'){
+			istrue="sendquestionnaire";
+			request.put("lid",get("mysid"));
+		}
+		attach("istrue",istrue);
+		attach("ismessage",ismessage);
+	}
+	
+	EVENT PAGER{
+		var List<MstGroupmember> groupmember =new ArrayList<MstGroupmember>;
+
+		var List list = new ArrayList();	
+		for(group:thisgrouplist){
+			var Map mylist=new HashMap();
+			var String createname=null;
+			mylist.put("name",group.name);
+			mylist.put("picture",group.header);
+			groupmember=group.mstGroupmemberArray;
+			for(member:groupmember){
+				if(member.role!=null&&member.role.equals("群主")){
+					createname=member.toMstUser.name;
+			   }
+			}
+			mylist.put("createname",createname);
+			mylist.put("sid",group.sid);
+			list.add(mylist);
+			}
+			attach("list", list);
+	}
+	
+	EVENT LINKAWAY{
+		    request.put("lid",get("mysid"));
+			attach("istrue","tomylabelgroup");
+	}
+	
+	WIDGET labelgrouptitle(title="小组列表",container="container1",bind=""){
+		Textview;
+	}
+	WIDGET labelgroup(title="",container="container1",bind=@{get("list")},class="classlist li"){
+		ListView(dataurl="/page/grid"){
+			COLUMN picture(title="",editable="false",type="image",bind="picture");
+			COLUMN name(title="",editable="false",type="string",bind="name");
+			COLUMN sid(title="",editable="false",type="link",bind="sid");
+			COLUMN createname(title="",editable="false",type="string",bind="createname");
+		};
+	}
+	WIDGET deletemessage(title="",container="container1",bind="请解散所有群组后再删除该标签"){
+		Textview;
+		REFRESH(condition=@{get("ismessage")},when="submit");
+	}
+	WIDGET addgroup(title="",container="container2",bind="添加小组"){
+		Button;
+	}
+	
+	WIDGET deletelable(title="",container="container2",bind="删除标签"){
+		Button;
+	}
+	
+	WIDGET changemessage(title="",container="container2",bind="修改信息"){
+		Button;
+	}
+	WIDGET backbtn(title="",container="container2",bind="返回"){
+		Button;
+	}
+	
+	WIDGET sendquestionnaire(title="",container="container2",bind="发布问卷"){
+		Button;
+	}
+	
+	ACTION thesendquestionnaire(target="sendquestionnaire",type="click",todo="submit");
+	ACTION thechangemessage(target="changemessage",type="click",todo="submit");
+	ACTION theaddgroup(target="addgroup",type="click",todo="submit");	
+	ACTION backbut(target="backbtn",type="click",todo="submit");
+	ACTION thedeletelable(target="deletelable",type="click",todo="submit");
+	
+	TRANSFER toquescontentlist(on=@{get('istrue').equals("sendquestionnaire")},to="quescontentlist");
+	TRANSFER tochangemessage(on=@{get('istrue').equals("changemessage")},to="classlabelchange");
+	TRANSFER todeletelable(on=@{get('istrue').equals("delete")},to="classgrouptv");
+	TRANSFER toback(on=@{get('istrue').equals("back")},to="classgrouptv");
+	TRANSFER toaddgroup(on=@{get('istrue').equals("addgroup")},to="classlabelgroupaddtv");
+	TRANSFER toegroupmenberlist(on=@{get('istrue').equals("tomylabelgroup")},to="classlabelgroupmemberlisttv");
+
+}

@@ -1,0 +1,91 @@
+package app.drz.org
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import com.drz.model.MstFriends
+import java.util.ArrayList
+import java.util.Map
+import java.util.HashMap
+import java.util.List
+
+PAGE friendlist(title="我的好友", path="branch") extends JellyInjectBase{
+
+	DATA List<MstUser> users(imp="drzuser",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"sid in " + get("friendslist")});
+	};
+	
+	DATA List<MstFriends> thisfriends(imp="drzfriends",iterator="list", createnew="true"){
+		PARAMETER where(value=@{"toMstUser= " + request.get("uid")});
+	};
+	
+	LAYOUT(generator="auto");
+	
+//	LAYOUT(file="");
+	
+	EVENT CREATE{
+		var Boolean isinfo=false;
+		var Boolean islist=false;
+		thisfriends = queryDataInstance("thisfriends") as List<MstFriends>;
+		if(thisfriends.size==0){
+			isinfo=true;
+		}else{
+			islist=true;
+		var String friendslist="(";
+		if(thisfriends.length!=0){
+		for(thefriends:thisfriends){
+			friendslist=friendslist+"'"+thefriends.fid+"'"+",";
+		}
+		    friendslist=friendslist.substring(0,friendslist.length()-1);	
+		}
+			friendslist=friendslist+")";
+		attach("friendslist", friendslist);
+		}
+		attach("islist",islist);
+		attach("isinfo",isinfo);
+	}
+	
+	EVENT SUBMIT{
+		var String istrue=null;
+		if(request.get('x_source') == 'back'){
+		    istrue="backbut";
+		}	 
+		attach("istrue",istrue);
+	}
+	
+	EVENT PAGER{
+		var List FriendsList = new ArrayList();
+		if(thisfriends.size!=0){		
+		users = queryDataInstance("users") as List<MstUser>;
+	    for(thefriend:users){
+	    	var Map mylist=new HashMap();
+	    	mylist.put("header",thefriend.header);
+	    	mylist.put("sid",thefriend.sid);
+	    	mylist.put("name",thefriend.name);
+	    	FriendsList.add(mylist);
+	    }
+	    }
+	    attach("FriendsList", FriendsList);	    
+	}
+	
+	WIDGET info(title="您还未添加好友",container="container1",bind=""){
+		Textview;
+		REFRESH(condition=@{get("isinfo")},when="create");
+	}
+	
+	WIDGET myclasslist(title="好友列表",container="container1",bind=@{get("FriendsList")},class="friendlist li"){
+		ListView(dataurl="/page/grid"){
+			COLUMN header(title="",editable="false",type="image",bind="header");
+			COLUMN sid(title="",editable="false",type="link",bind="sid");
+			COLUMN name(title="",editable="false",type="string",bind="name");
+		};
+		REFRESH(condition=@{get("islist")},when="create");
+	}
+	
+	WIDGET back(title="",container="backbutton",bind="返回"){
+		Button;
+	}
+	
+	
+	ACTION backbut(target="back",type="click",todo="submit");
+	TRANSFER toclasslist(on=@{get('istrue').equals("backbut")},to="classlist");
+}

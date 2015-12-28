@@ -1,0 +1,65 @@
+package app.drz.org.sview
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+import com.drz.model.MstGroupmember
+import com.drz.model.MstLabel
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Map
+import com.drz.model.ClsExamination
+
+PAGE classgroupgrade(title="小组成绩查询",path="branch")extends JellyInjectBase{
+	DATA List<ClsExamination> thisexamination(imp="drzexamination",iterator="list"){
+		PARAMETER where(value=@{"evaluategid = " +request.get("gid")});
+	};
+	
+	LAYOUT(generator="auto");
+	
+	EVENT CREATE{
+		attach("gid",request.get("gid"));
+		attach("cid",request.get("cid"));
+	}
+	EVENT SUBMIT{
+		var String istrue=null;
+		if(request.get('x_source') == 'btnback'){
+			istrue="btnback";
+			request.put("thegroupsid",get("gid"));
+			request.put("classsid",get("cid"));
+		}
+		attach("istrue",istrue);
+	}
+	
+	EVENT PAGER{
+		thisexamination = queryDataInstance("thisexamination") as List<ClsExamination>;
+		utils.log(request.get("gid"));
+		var List grades =new ArrayList();
+		for(exam:thisexamination){
+			var Map mylist=new HashMap();
+			mylist.put("name",exam.name);
+			mylist.put("grade",exam.commentgrade);
+			grades.add(mylist);
+		}
+		utils.log(grades);
+		attach("grades",grades);
+	}
+	
+	WIDGET gradetitle(title="评分列表",container="content",bind=""){
+		Textview;
+	}
+	
+	WIDGET gradelist(title="",container="content",bind=@{get("grades")}){
+		ListView(dataurl="/page/grid"){
+			COLUMN name(title="评价名称:",editable="false",type="string",bind="name");
+			COLUMN grade(title="得分:",editable="false",type="string",bind="grade");
+		};
+	}
+	
+	WIDGET btnback(title="",container="content1",bind="返回"){
+		Button;
+	}
+	
+	ACTION thebtnback(target="btnback",type="click",todo="submit");
+	TRANSFER toback(on=@{get("istrue").equals("btnback")},to="groupmemberlist");
+}

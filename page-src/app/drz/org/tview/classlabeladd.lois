@@ -1,0 +1,125 @@
+package app.drz.org.tview
+
+import cn.smartx.core.model.JellyInjectBase
+import java.util.ArrayList
+import java.util.Map
+import java.util.HashMap
+import java.util.List
+import com.drz.model.ClsClass
+import com.drz.model.MstLabel
+import java.lang.invoke.InfoFromMemberName
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.regex.Pattern
+import java.util.regex.Matcher
+import org.apache.velocity.runtime.directive.Break.BreakException
+
+PAGE classlabeladd(title="添加课程标签", path="branch") extends JellyInjectBase{
+
+	 DATA List<MstLabel> thislabel(imp="drzlabel", iterator="list", createnew="true"){
+		PARAMETER where(value=@{"fieldA= "+request.get('classsid') + "and deleteflag == NULL"});
+	};
+//
+	LAYOUT(generator="auto");
+//    LAYOUT(file="");
+
+	EVENT CREATE{
+		thislabel = queryDataInstance("thislabel") as List<MstLabel> ;
+		var getclasssid=request.get('classsid');
+		attach("mysid",getclasssid);
+	}
+	
+	EVENT SUBMIT{
+		var String istrue=null;
+		if(request.get('x_source') == 'subbutton'){
+			istrue='subbutton';
+			request.put("sid",get('mysid'));//获取课程号
+			for(mylable:thislabel){
+				if(request.get('labelname').equals(" ")){
+					istrue="no";
+					context.error("名称不能包含非法字符");
+					
+				}else if(request.get('labelname').equals("")){
+					istrue="no";
+					context.error("名称不能为空");
+					
+				}else if(request.get('labelname').equals(mylable.fieldB)){
+					istrue="no";
+					context.error("标签名称不能相同");
+				}
+				
+				if(request.get('starttime').equals("")||request.get('finishtime').equals("")){
+					istrue="no";
+					context.error("时间不能为空");
+				}
+				else{
+					utils.log("时间为"+request.get('starttime')+ " 结束时间为    "+request.get('finishtime'))
+					var Long starttime=Long.valueOf(request.get('starttime').toString);
+                    var Long finishtime=Long.valueOf(request.get('finishtime').toString);
+                    if(starttime>finishtime){
+                    	istrue="no";
+					    context.error("开始时间不能晚于结束时间");
+                    }   
+				}
+				if(request.get('maxnum')!=''){
+					var int num=Integer.parseInt(request.get('maxnum').toString);
+					if(num==0){
+						istrue="no";
+						context.error("最大人数不能为0");
+					}
+				}
+				
+			}
+			if(istrue.equals("subbutton")){ //////////////////////////增加
+				var MstLabel Info = context.createDbIntance("drzlabel","Info") as MstLabel;
+				Info.fieldA = Integer.parseInt(get('mysid').toString);
+				Info.fieldB = request.get("labelname").toString;
+				Info.fieldC = request.get("starttime").toString;
+				Info.fieldD = request.get("finishtime").toString;
+				Info.fieldE = request.get("maxnum").toString;
+				Info.type = "class";
+				context.submit();
+			}else{
+				context.error("添加失败");
+			}
+			
+		}if(request.get('x_source') == 'back')	{
+			request.put("sid",get('mysid'));
+			istrue="back";
+		}
+		attach("istrue",istrue);
+			
+	}   
+	
+	EVENT PAGER{
+	}
+	
+    WIDGET labelname(title="标签名称",container="container1",bind=""){
+		Text(max="30");
+	}
+	
+	WIDGET starttime(title="分组开始时间",container="container1",bind=""){
+		TimePicker;
+	}
+	
+	WIDGET finishtime(title="分组结束时间",container="container1",bind=""){
+		TimePicker;
+	}
+	
+	WIDGET maxnum(title="每组人数上限",container="container1",required="true",bind="1"){
+		NumInput(max="20",min="1");
+	}
+	
+	WIDGET subbutton(title="",container="container2",bind="提交"){
+		Button;
+	}
+	
+	WIDGET back(title="",container="container2",bind="返回"){
+		Button;
+	}
+	
+	ACTION backbut(target="back",type="click",todo="submit");
+	ACTION submitbut(type="click", target="subbutton", todo="submit");
+	TRANSFER tosubbutton(on=@{get('istrue').equals('subbutton')},to="classgrouptv");
+	TRANSFER toback(on=@{get('istrue').equals('back')},to="classgrouptv");
+}

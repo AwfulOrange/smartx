@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="serviceUserList" title="用户列表服务"  jellyinject="service.core.user.serviceUserList"><data id="config"  import="config" iterator="map" ></data><event when="service"><![CDATA[_jelly.event_service()]]></event></page>

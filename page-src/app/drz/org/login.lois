@@ -1,0 +1,58 @@
+package app.drz.org
+
+import cn.smartx.core.model.JellyInjectBase
+import com.drz.model.MstUser
+
+PAGE login(title="Dr.z", path="root") extends JellyInjectBase{
+	
+	DATA MstUser user(imp="drzuser",iterator="object", createnew="true"){
+		PARAMETER where(value=@{"userno= '"+get("loginid")+"'"});
+	};
+//	  LAYOUT(file="");
+    LAYOUT(generator="auto");
+    
+	
+	EVENT CREATE{
+
+	}
+	EVENT SUBMIT{
+		attach("loginid",request.get('userid').toString);
+		utils.log(get("loginid"))
+		user = queryDataInstance("user") as MstUser;
+		utils.log(user);
+		 var String sessionToken = null; 
+		 if(request.get('x_source') == "login"){
+			if(context.login(request.get('userid').toString,request.get('password').toString) != null){
+				if(user.flag.equals("admin")){
+					attach("pageturn","toImport");
+				}else{
+					attach("pageturn","toclasslist");
+				}
+                sessionToken = session.getToken();
+                session.setAttribute('userid',request.get('userid').toString);
+			}
+			else{
+				context.error("账号密码错误");
+			}
+		}
+		
+		attach("sessionToken",sessionToken);
+		}
+		
+	WIDGET wgtId(title="Dr.z",container="container0", bind="",class="login"){
+	   Textview;
+	}		
+	WIDGET userid(title="", bind="1002", container="container1", required="true"){
+		Text(placeholder="账号");
+	}
+	WIDGET password(title="", bind="123456", container="container1", required="true"){	
+		Password(placeholder="密码");
+	}
+	WIDGET login(title="",bind="登陆",container="container2"){
+		Button(mapenterbutton="true");
+	}
+	
+	ACTION actSave(type="click", target="login", todo="submit");
+	TRANSFER actSave(on=@{(get("sessionToken")!=null)&&(get("pageturn").toString.equals("toclasslist"))},to="classlist");
+	TRANSFER toImport(on=@{(get("sessionToken")!=null)&&(get("pageturn").toString.equals("toImport"))},to="ImportUserList");
+}

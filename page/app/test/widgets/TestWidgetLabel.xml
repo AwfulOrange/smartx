@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="TestWidgetLabel" title="测试Label控件" path="leaf"  jellyinject="app.test.widgets.TestWidgetLabel"><layout generator="autogroup"  ></layout><widget id="Default" title="Default Title" container="content" bind="Label Content" ><label /></widget><event when="create"><![CDATA[_jelly.event_create()]]></event></page>

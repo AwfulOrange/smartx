@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page code="TestWidgetTextView" title="测试TextView控件" path="leaf"  jellyinject="app.test.widgets.TestWidgetTextView"><layout generator="autogroup"  ></layout><widget id="Default" title="Default" container="content" bind="TextView Content" ><textview /></widget><widget id="noTitle" title="" container="content" bind="TextView Content Without title" ><textview /></widget><event when="create"><![CDATA[_jelly.event_create()]]></event></page>
